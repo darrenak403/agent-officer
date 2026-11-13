@@ -8,6 +8,7 @@ import { TeamList } from './team-list';
 import { ActivityFeed } from './activity-feed';
 import { ContextBar } from './context-bar';
 import { PlanLimits } from './plan-limits';
+import { SessionPicker } from './session-picker';
 import { useOfficeHistory, useOfficeLive } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
 import { agentNames, describeTool, sessionLabel } from '../labels';
@@ -97,13 +98,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
         <button aria-pressed={runtime === 'claude_code'} onClick={() => chooseRuntime('claude_code')}>Claude Code</button>
         <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>
       </div>
-      <label className="session-pick">
-        <span className="sr-only">Phiên làm việc</span>
-        <select value={activeSession?.id ?? ''} onChange={e => { setSessionId(e.target.value); setSelectedId(null); }} disabled={!sessions.length}>
-          {sessions.length ? sessions.map(s => { const l = sessionLabel(s); return <option key={s.id} value={s.id}>{l.title} · {l.meta}</option>; })
-            : <option value="">Chưa có phiên nào</option>}
-        </select>
-      </label>
+      <SessionPicker sessions={sessions} activeId={activeSession?.id ?? null} onChange={id => { setSessionId(id); setSelectedId(null); }} />
       <PlanLimits limits={snapshot.limits ?? null} />
       <span className={`health ${health.cls}`}>{health.text}</span>
     </header>

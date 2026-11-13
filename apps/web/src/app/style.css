@@ -133,6 +133,25 @@ h2{margin:0;font-size:13px;font-weight:700}
 @media (max-width:1100px){.limit-reset{display:none}}
 @media (max-width:760px){.plan-limits{width:100%;margin-left:0;flex-wrap:wrap}}
 header:has(.plan-limits){flex-wrap:wrap;row-gap:8px}
-header:has(.plan-limits) select{min-width:240px}
+
 @media (max-width:1100px){.plan-limits{order:5;width:100%;margin-left:0;justify-content:flex-start}.limit-reset{display:block}.vn-clock{margin-left:auto}}
 .limit-empty{font-size:12px;color:var(--dim)}.limit-empty code{font-family:var(--mono);color:var(--muted)}
+
+/* Session picker */
+.session-picker{position:relative;min-width:260px;max-width:360px;flex:0 1 360px}
+.sp-trigger,.sp-menu button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:8px 12px}
+.sp-trigger{min-height:44px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);transition:border-color .2s var(--ease)}
+.sp-trigger:hover:not(:disabled),.sp-trigger[aria-expanded=true]{border-color:var(--dim)}
+.sp-trigger:disabled{cursor:default;opacity:.7}
+.sp-text{display:flex;flex-direction:column;min-width:0;flex:1}
+.sp-text b{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-text small{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.sp-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--gone)}
+.sp-active{background:var(--working);box-shadow:0 0 0 3px color-mix(in oklab,var(--working) 25%,transparent)}
+.sp-idle{background:var(--idle)}
+.sp-chevron{flex:none;color:var(--dim);transition:transform .2s var(--ease)}
+.sp-trigger[aria-expanded=true] .sp-chevron{transform:rotate(180deg)}
+.sp-menu{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;max-height:360px;overflow:auto;margin:0;padding:4px;list-style:none;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 32px rgb(5 10 18 / .5)}
+.sp-menu button{border-radius:4px}
+.sp-menu button:hover{background:var(--s2)}
+.sp-menu [aria-selected=true] button{background:var(--s3)}
