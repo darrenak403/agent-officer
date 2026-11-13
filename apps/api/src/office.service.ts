@@ -102,17 +102,19 @@ export class OfficeService {
             where: { agentId: agent.id, status: 'RUNNING' }, orderBy: { startedAt: 'desc' },
           });
           // Subagents inherit the description their parent wrote when delegating them.
-          const mission = event.sourceHook === 'SubagentStart' && !agent.mission
+          const mission = event.mission ?? (event.sourceHook === 'SubagentStart' && !agent.mission
             ? (await tx.toolExecution.findFirst({
               where: { sessionId: session.id, name: { in: ['Agent', 'Task'] }, status: 'RUNNING', activity: { not: null } },
               orderBy: { startedAt: 'desc' }, select: { activity: true },
             }))?.activity ?? null
-            : null;
+            : null);
           const latestTool = event.toolUseId ? await tx.toolExecution.findUnique({
             where: { sessionId_toolUseId: { sessionId: session.id, toolUseId: event.toolUseId } }, select: { activity: true, name: true },
           }) : null;
           await tx.agent.update({ where: { id: agent.id }, data: {
             ...(mission ? { mission } : {}),
+            ...(event.usageInput != null ? { usageInput: event.usageInput, usageCacheRead: event.usageCacheRead ?? 0,
+              usageCacheWrite: event.usageCacheWrite ?? 0, usageOutput: event.usageOutput ?? 0 } : {}),
             ...(event.contextTokens != null ? { contextTokens: event.contextTokens, contextLimit: event.contextLimit ?? null, model: event.model ?? null } : {}),
             // The role often arrives after the first event; upgrade the generic placeholder name.
             ...(event.agentType && agent.type === 'SUBAGENT' && agent.name === 'Subagent' ? { name: event.agentType } : {}),
@@ -154,7 +156,9 @@ export class OfficeService {
         agents: s.agents.map(a => ({
           id: a.id, runtimeAgentId: a.runtimeAgentId, name: a.name, type: a.type,
           status: a.status as OfficeSnapshot['sessions'][number]['agents'][number]['status'],
-          currentTool: a.currentTool, currentActivity: a.currentActivity, mission: a.mission, contextTokens: a.contextTokens, contextLimit: a.contextLimit, model: a.model, lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
+          currentTool: a.currentTool, currentActivity: a.currentActivity, mission: a.mission, contextTokens: a.contextTokens, contextLimit: a.contextLimit, model: a.model,
+          usage: a.usageInput == null ? null : { input: a.usageInput, cacheRead: a.usageCacheRead ?? 0, cacheWrite: a.usageCacheWrite ?? 0, output: a.usageOutput ?? 0 },
+          lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
           identityConfidence: a.identityConfidence as 'HIGH' | 'MEDIUM' | 'LOW',
           parentAgentId: a.parentAgentId,
         })),

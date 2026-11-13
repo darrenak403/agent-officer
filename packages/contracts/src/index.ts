@@ -28,6 +28,11 @@ export const HookEvent = z.object({
   contextTokens: z.number().int().nonnegative().max(10_000_000).nullable().optional(),
   contextLimit: z.number().int().positive().max(10_000_000).nullable().optional(),
   model: z.string().min(1).max(80).nullable().optional(),
+  mission: z.string().min(1).max(160).nullable().optional(),
+  usageInput: z.number().int().nonnegative().nullable().optional(),
+  usageCacheRead: z.number().int().nonnegative().nullable().optional(),
+  usageCacheWrite: z.number().int().nonnegative().nullable().optional(),
+  usageOutput: z.number().int().nonnegative().nullable().optional(),
   receivedAt: z.string().datetime(),
   dedupeKey: z.string().min(1).max(128),
 }).strict();
@@ -40,6 +45,7 @@ export const OfficeAgentSchema = z.object({
   id: z.string(), runtimeAgentId: nullableText, name: z.string(), type: z.string(),
   status: AgentStatus, currentTool: nullableText, currentActivity: nullableText, mission: nullableText, lastSeenAt: nullableTime,
   contextTokens: z.number().int().nullable(), contextLimit: z.number().int().nullable(), model: nullableText,
+  usage: z.object({ input: z.number(), cacheRead: z.number(), cacheWrite: z.number(), output: z.number() }).nullable(),
   identityConfidence: z.enum(['HIGH', 'MEDIUM', 'LOW']), parentAgentId: nullableText,
 });
 export type OfficeAgent = z.infer<typeof OfficeAgentSchema>;

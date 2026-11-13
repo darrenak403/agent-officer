@@ -33,8 +33,11 @@ const deskSpots = [
   [104, 205], [286, 205], [468, 205], [650, 205],
   [104, 390], [286, 390], [468, 390], [650, 390],
 ];
-const loungeSpots = [[914, 316], [1010, 316], [914, 412], [1010, 412]];
-const exitSpots = [[890, 560], [985, 560]];
+// Two seated on the sofa, two standing below the coffee table; exits stand by the door.
+const loungeSpots = [[920, 312], [1030, 312], [920, 440], [1030, 440]];
+const exitSpots = [[890, 568], [990, 568]];
+/** A finished subagent rests in the lounge for a while before it is shown as gone. */
+export const LOUNGE_MS = 15 * 60_000;
 
 function stableNumber(value: string) {
   let n = 0;
@@ -131,14 +134,18 @@ function background(pixi: Pixi, runtime: Runtime) {
   rect(g, 896, 62, 172, 58, '#152337');
   rect(g, 901, 67, 162, 48, '#556372');
   rect(g, 920, 74, 3, 32, runtime === 'codex' ? COLOR.teal : COLOR.amber);
-  for (const [x, y] of [[55, 165], [799, 171], [873, 181], [1066, 180], [1065, 438], [35, 574]]) plant(g, x, y);
+  // Exit door, so the gone corner reads as a way out.
+  rect(g, 1068, 520, 34, 72, '#1a2638');
+  rect(g, 1072, 524, 26, 68, '#5b4636');
+  rect(g, 1092, 556, 3, 4, COLOR.amber);
+  for (const [x, y] of [[55, 165], [799, 171], [873, 181], [1066, 180], [35, 574]]) plant(g, x, y);
   rect(g, 35, 610, 773, 7, '#243247');
   stage.addChild(g);
   label(pixi, stage, 'AGENT', 64, 52, 21, COLOR.cream, 'bold');
   label(pixi, stage, 'OFFICE', 64, 77, 17, runtime === 'codex' ? COLOR.teal : COLOR.amber, 'bold');
   label(pixi, stage, 'BÀN LÀM VIỆC', 43, 159, 15, COLOR.cream, 'bold');
   label(pixi, stage, 'KHU NGHỈ', 870, 162, 15, COLOR.cream, 'bold');
-  label(pixi, stage, 'ĐÃ DỪNG / CHƯA RÕ', 866, 507, 12, COLOR.muted);
+  label(pixi, stage, 'ĐÃ RỜI / MẤT TÍN HIỆU', 866, 507, 12, COLOR.muted);
   label(pixi, stage, 'CHỈ QUAN SÁT', 932, 80, 12, COLOR.cream, 'bold');
   label(pixi, stage, 'CHỈ HIỂN THỊ DỮ LIỆU QUAN SÁT', 43, 622, 11, COLOR.muted);
   return stage;
@@ -283,7 +290,10 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
         animated.length = 0;
         // Zone = observed state: desks for active turns, lounge for resting, exit for gone/unknown.
         // Active agents first so they always get a desk; overflow per zone is summarized, never misplaced.
-        const zoneOf = (a: CanvasAgent) => a.status === 'IDLE' ? 'lounge' : ['STOPPED', 'COMPLETED', 'UNKNOWN', 'FAILED'].includes(a.status) ? 'exit' : 'desk';
+        const now = Date.now();
+        const recent = (a: CanvasAgent) => !!a.lastSeenAt && now - Date.parse(a.lastSeenAt) < LOUNGE_MS;
+        const zoneOf = (a: CanvasAgent) => a.status === 'IDLE' || (['COMPLETED', 'STOPPED'].includes(a.status) && a.type === 'SUBAGENT' && recent(a)) ? 'lounge'
+          : ['STOPPED', 'COMPLETED', 'UNKNOWN', 'FAILED'].includes(a.status) ? 'exit' : 'desk';
         const spots = { desk: deskSpots, lounge: loungeSpots, exit: exitSpots } as const;
         const used = { desk: 0, lounge: 0, exit: 0 };
         const hidden = { desk: 0, lounge: 0, exit: 0 };
@@ -303,7 +313,7 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
           layer.addChild(item);
           animated.push({ item, x, y, gx: from.x, gy: from.y, status: agent.status });
         }
-        const overflow: Array<[keyof typeof hidden, number, number]> = [['desk', 700, 600], ['lounge', 880, 470], ['exit', 1030, 600]];
+        const overflow: Array<[keyof typeof hidden, number, number]> = [['desk', 700, 600], ['lounge', 1000, 160], ['exit', 1030, 600]];
         for (const [zone, x, y] of overflow) if (hidden[zone]) {
           const tag = new pixi.Container();
           const bg = new pixi.Graphics();

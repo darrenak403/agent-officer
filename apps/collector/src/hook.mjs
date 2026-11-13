@@ -3,9 +3,12 @@
 import { normalizeHook, readLimitedStdin } from './normalize.mjs';
 import { deliver, loadToken, spool } from './deliver.mjs';
 import { readContext } from './context.mjs';
+import { readSubagent } from './subagent.mjs';
 
 // Hooks after which the main thread's context size can have changed.
 const CONTEXT_HOOKS = new Set(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure', 'Stop', 'PreCompact']);
+
+const SUBAGENT_HOOKS = new Set(['SubagentStart', 'PostToolUse', 'PostToolUseFailure', 'SubagentStop']);
 
 let observedHook;
 async function main() {
@@ -18,6 +21,11 @@ async function main() {
   if (!event.runtimeAgentId && CONTEXT_HOOKS.has(event.sourceHook)) {
     const ctx = await readContext(input.transcript_path);
     if (ctx) Object.assign(event, ctx);
+  }
+  // Subagents: mission label and running token totals from their own transcript.
+  if (event.runtimeAgentId && SUBAGENT_HOOKS.has(event.sourceHook)) {
+    const sub = await readSubagent(input.transcript_path, event.runtimeAgentId);
+    if (sub) Object.assign(event, sub);
   }
   observedHook = event.sourceHook;
   const token = await loadToken();

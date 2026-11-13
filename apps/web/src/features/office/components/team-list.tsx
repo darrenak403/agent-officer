@@ -4,13 +4,16 @@ import { useState } from 'react';
 import type { LiveAgent } from './office-dashboard';
 import type { OfficeSnapshot } from '@office/contracts';
 import { ContextBar } from './context-bar';
+import { LOUNGE_MS } from './office-canvas';
 import { AgentFocus } from './agent-focus';
 
 const RANK: Record<string, number> = { WAITING: 0, WORKING: 1, IDLE: 2, DISCOVERED: 3 };
 
 /** Main agent first, its subagents under it; urgent states rise to the top of each group. */
 export function TeamList({ agents, tools, now, selectedId, onSelect }: { agents: LiveAgent[]; tools: OfficeSnapshot['tools']; now: number; selectedId: string | null; onSelect: (id: string | null) => void }) {
-  const rank = (a: LiveAgent) => RANK[a.presence.status] ?? 9;
+  // A subagent that just handed back stays listed (it rests in the lounge), ranked after active ones.
+  const resting = (a: LiveAgent) => ['STOPPED', 'COMPLETED'].includes(a.presence.status) && !!a.lastSeenAt && now - Date.parse(a.lastSeenAt) < LOUNGE_MS;
+  const rank = (a: LiveAgent) => RANK[a.presence.status] ?? (resting(a) ? 4 : 9);
   const main = agents.filter(a => a.type === 'MAIN');
   const subs = agents.filter(a => a.type !== 'MAIN').sort((a, b) => rank(a) - rank(b));
   const [showGone, setShowGone] = useState(false);

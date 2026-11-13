@@ -55,6 +55,11 @@ model Agent {
   contextTokens      Int?
   contextLimit       Int?
   model              String?
+  /// Subagent only: cumulative token usage of its run.
+  usageInput         Int?
+  usageCacheRead     Int?
+  usageCacheWrite    Int?
+  usageOutput        Int?
   identityConfidence String   @default("LOW")
   lastSeenAt         DateTime?
   lastAppliedAt      DateTime?

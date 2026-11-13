@@ -128,7 +128,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
             <ContextBar agent={a} compact />
           </button>) : <p className="empty">Chưa có agent trong phiên này.</p>}
         </div>}
-        <p className="legend">Bàn làm việc: đang làm · Khu nghỉ: đã trả lời xong · Cửa ra: đã rời hoặc mất tín hiệu 5 phút</p>
+        <p className="legend">Bàn làm việc: đang làm · Khu nghỉ: vừa xong việc (15 phút) · Cửa ra: đã rời lâu hơn hoặc mất tín hiệu</p>
       </section>
 
       <aside className="drawer">

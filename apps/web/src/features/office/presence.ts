@@ -11,7 +11,9 @@ export const WORKING_STALE_MS = 5 * 60_000;
  * so the map never animates work that is no longer evidenced.
  */
 export function projectPresence(agent: OfficeAgent, session: OfficeSession, sourceHook: string | null, now: number): Presence {
-  if (agent.status === 'STOPPED') return { status: 'STOPPED', label: 'Đã rời', detail: 'Đã làm xong phần việc được giao', observed: true };
+  if (agent.status === 'STOPPED') return agent.type === 'SUBAGENT'
+    ? { status: 'STOPPED', label: 'Xong việc', detail: 'Đã nộp kết quả cho agent chính', observed: true }
+    : { status: 'STOPPED', label: 'Đã rời', detail: 'Đã kết thúc lượt làm việc', observed: true };
   if (agent.status === 'COMPLETED') return { status: 'COMPLETED', label: 'Hoàn tất', detail: 'Runtime ghi nhận hoàn tất', observed: true };
   if (agent.status === 'FAILED') return { status: 'FAILED', label: 'Có lỗi', detail: 'Lượt làm việc dừng vì lỗi', observed: true };
   if (session.status === 'ENDED') return { status: 'STOPPED', label: 'Phiên đã đóng', detail: 'Phiên làm việc đã kết thúc', observed: true };
