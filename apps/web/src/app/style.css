@@ -6,15 +6,27 @@
 .context-bar{display:grid;gap:4px;margin-top:6px;min-width:0}.context-track{height:6px;background:#0f1622;border:1px solid var(--line);overflow:hidden}.context-track span{display:block;height:100%;background:#6ccbb8;transition:width .6s cubic-bezier(.2,.8,.2,1)}
 .context-bar[data-level=mid] .context-track span{background:#e6c35c}.context-bar[data-level=high] .context-track span{background:#e0705a}.context-bar small{color:var(--muted);font-size:11px}.context-bar b{color:var(--text)}.context-bar.compact .context-track{height:4px}.context-bar.compact small{font-size:10px}.context-unknown{color:var(--muted);font-size:12px}
 .session{display:grid}
-.active-agents ul{list-style:none;margin:0;padding:8px;display:grid;gap:8px}.active-card{width:100%;display:flex;gap:10px;text-align:left;background:#1d2635;border:1px solid var(--line);color:var(--text);padding:10px;position:relative;overflow:hidden;animation:enter .35s ease-out both}
+.active-agents ul{list-style:none;margin:0;padding:8px;display:grid;gap:8px}.active-card{width:100%;display:flex;gap:10px;text-align:left;background:#1d2635;border:1px solid var(--line);color:var(--text);padding:10px;position:relative;overflow:hidden;animation:enter .25s cubic-bezier(.25,1,.5,1) both}
 .active-card.selected{border-color:var(--accent)}.active-card:hover{background:#222d3f}.active-body{display:grid;gap:3px;min-width:0;flex:1}.active-body strong{display:flex;justify-content:space-between;gap:8px;font-size:13px}.active-body em{font-style:normal;color:var(--muted);font-size:11px;font-weight:400;white-space:nowrap}
 .active-doing{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pulse{width:10px;height:10px;margin-top:4px;flex:none;border-radius:50%;background:#6ccbb8;box-shadow:0 0 0 0 #6ccbb880;animation:pulse 1.6s ease-out infinite}.active-card[data-s=WAITING] .pulse{background:#edaa63;box-shadow:0 0 0 0 #edaa6380;animation-duration:.9s}.active-card[data-s=WAITING]{border-left:3px solid #edaa63}
-.work-shimmer{height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:shimmer 1.4s linear infinite}
-.toolbar-stats b{display:inline-block;animation:pop .4s ease-out}.toolbar-stats [data-s=WORKING] b{color:#6ccbb8}.toolbar-stats [data-s=WAITING] b{color:#edaa63}
-.timeline li,.task-tools li{animation:enter .3s ease-out both}
+.pulse{width:10px;height:10px;margin-top:4px;flex:none;border-radius:50%;background:#6ccbb8;box-shadow:0 0 0 0 #6ccbb880;animation:pulse 1.6s ease-out infinite}.active-card[data-s=WAITING] .pulse{background:#edaa63;box-shadow:0 0 0 0 #edaa6380;animation-duration:.9s}.active-card[data-s=WAITING]{background:#2c2a2a;border-color:#6b5136}
+.work-shimmer{height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:shimmer 1.6s cubic-bezier(.45,0,.55,1) infinite}
+.toolbar-stats b{display:inline-block;animation:pop .2s cubic-bezier(.25,1,.5,1)}.toolbar-stats [data-s=WORKING] b{color:#6ccbb8}.toolbar-stats [data-s=WAITING] b{color:#edaa63}
+.timeline li,.task-tools li{animation:enter .2s cubic-bezier(.25,1,.5,1) both}
 @keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @keyframes shimmer{from{background-position:-40% 0}to{background-position:140% 0}}
-@keyframes pop{from{transform:scale(1.5)}to{transform:none}}
+@keyframes pop{from{transform:translateY(-3px);opacity:.4}to{transform:none;opacity:1}}
 @keyframes enter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+:root{--ease:cubic-bezier(.25,1,.5,1)}
+.toolbar-stats,time,.context-bar small,.active-body em,.session small{font-variant-numeric:tabular-nums}
+h1,h2{text-wrap:balance}
+.view-switch button,.switch button{min-height:40px;transition:background-color .15s var(--ease),color .15s var(--ease),transform .1s var(--ease)}
+.view-switch button:hover,.switch button:hover{color:var(--text)}
+button:active{transform:translateY(1px)}
+.session,.agent-list button{transition:background-color .15s var(--ease),transform .15s var(--ease)}
+.session:hover,.agent-list button:hover,.active-card:hover{transform:translateX(2px)}
+.active-card{transition:background-color .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease)}
+.rail nav a{transition:color .15s var(--ease),background-color .15s var(--ease)}.rail nav a:hover{color:var(--text);background:#1e2737}
+.room{min-height:220px;background:#1b2433}

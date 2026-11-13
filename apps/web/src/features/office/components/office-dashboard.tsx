@@ -94,7 +94,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
         <div>
           <span className="eyebrow">VĂN PHÒNG / {runtime === 'codex' ? 'CODEX' : 'CLAUDE CODE'}</span>
           <h1>Văn phòng {runtimeName(runtime)}</h1>
-          <p>Đang làm: từ lúc nhận yêu cầu đến khi trả lời xong. Đang nghỉ: đã trả lời xong. Mất tín hiệu: 5 phút không có hoạt động.</p>
+          <p>Ai đang làm, ai đang nghỉ, ai cần bạn duyệt. Cập nhật theo từng hook.</p>
         </div>
         <span className={`health ${health.cls}`}>{health.text}</span>
       </header>
@@ -147,7 +147,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
           <div className="panel-head"><h2>Chi tiết agent</h2><small>{selected ? (selected.type === 'MAIN' ? 'Agent chính' : 'Subagent') : 'Bấm vào một agent'}</small></div>
           {selected ? <dl>
             <dt>Tên</dt><dd>{selected.displayName}</dd>
-            <dt>Trạng thái</dt><dd>{selected.presence.label} — {selected.presence.detail}</dd>
+            <dt>Trạng thái</dt><dd>{selected.presence.label}. {selected.presence.detail}</dd>
             <dt>Đang làm gì</dt><dd>{selected.doing ?? 'Chưa có thao tác nào'}</dd>
             <dt>Nhiệm vụ được giao</dt><dd>{selected.type === 'MAIN' ? 'Làm việc trực tiếp với bạn' : selected.mission ?? 'Không có mô tả'}</dd>
             <dt>Hoạt động gần nhất</dt><dd>{formatTime(selected.lastSeenAt)}</dd>
