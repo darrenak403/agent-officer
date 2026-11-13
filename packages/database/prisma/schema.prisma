@@ -22,6 +22,8 @@ model Session {
   runtimeSessionId String
   projectId        String?  @db.Uuid
   project          Project? @relation(fields: [projectId], references: [id])
+  /// Session name the runtime shows (renamed or auto-generated title).
+  title            String?
   status           String   @default("ACTIVE")
   startedAt        DateTime?
   endedAt          DateTime?

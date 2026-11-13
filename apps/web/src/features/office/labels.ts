@@ -60,7 +60,11 @@ export function agentNames(agents: OfficeAgent[]): Map<string, string> {
 export function sessionLabel(session: OfficeSession): { title: string; meta: string } {
   const state = session.status === 'ACTIVE' ? 'Đang mở' : session.status === 'ENDED' ? 'Đã đóng' : 'Không hoạt động';
   const people = session.agents.length === 1 ? '1 agent' : `${session.agents.length} agent`;
-  return { title: session.projectName ?? 'Dự án chưa rõ', meta: `${state} · ${people} · từ ${formatTime(session.startedAt)}` };
+  const project = session.projectName ?? 'Dự án chưa rõ';
+  // Prefer the session's own name; the folder moves to the second line.
+  return session.title
+    ? { title: session.title, meta: `${project} · ${state} · ${people} · từ ${formatTime(session.startedAt)}` }
+    : { title: project, meta: `${state} · ${people} · từ ${formatTime(session.startedAt)}` };
 }
 
 /** "86k / 200k" style token counts. */

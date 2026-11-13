@@ -29,6 +29,7 @@ export const HookEvent = z.object({
   contextLimit: z.number().int().positive().max(10_000_000).nullable().optional(),
   model: z.string().min(1).max(80).nullable().optional(),
   mission: z.string().min(1).max(160).nullable().optional(),
+  sessionTitle: z.string().min(1).max(160).nullable().optional(),
   usageInput: z.number().int().nonnegative().nullable().optional(),
   usageCacheRead: z.number().int().nonnegative().nullable().optional(),
   usageCacheWrite: z.number().int().nonnegative().nullable().optional(),
@@ -61,7 +62,7 @@ export const OfficeAgentSchema = z.object({
 export type OfficeAgent = z.infer<typeof OfficeAgentSchema>;
 
 export const OfficeSessionSchema = z.object({
-  id: z.string(), runtime: Runtime, runtimeSessionId: z.string(), projectName: nullableText,
+  id: z.string(), runtime: Runtime, runtimeSessionId: z.string(), projectName: nullableText, title: nullableText,
   status: z.enum(['ACTIVE', 'ENDED', 'UNKNOWN']), startedAt: nullableTime,
   endedAt: nullableTime, agents: z.array(OfficeAgentSchema),
 });

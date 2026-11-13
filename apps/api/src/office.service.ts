@@ -25,9 +25,9 @@ export class OfficeService {
           create: {
             runtime: event.runtime, runtimeSessionId: event.runtimeSessionId,
             projectId: project?.id, startedAt: event.sourceHook === 'SessionStart' ? seenAt : null,
-            lastEventAt: seenAt,
+            lastEventAt: seenAt, title: event.sessionTitle ?? null,
           },
-          update: { ...(project ? { projectId: project.id } : {}) },
+          update: { ...(project ? { projectId: project.id } : {}), ...(event.sessionTitle ? { title: event.sessionTitle } : {}) },
         });
 
         // Hooks fired by the main thread carry no agent_id; attribute them to the session's main
@@ -158,7 +158,7 @@ export class OfficeService {
     return {
       runtime, sequence: latest?.sequence.toString() ?? '0',
       sessions: sessions.map(s => ({
-        id: s.id, runtime, runtimeSessionId: s.runtimeSessionId, projectName: s.project?.name ?? null,
+        id: s.id, runtime, runtimeSessionId: s.runtimeSessionId, projectName: s.project?.name ?? null, title: s.title,
         status: s.status === 'ACTIVE' && s.lastEventAt && Date.now() - s.lastEventAt.getTime() > 120000
           ? 'UNKNOWN' : s.status as 'ACTIVE' | 'ENDED' | 'UNKNOWN',
         startedAt: s.startedAt?.toISOString() ?? null,
