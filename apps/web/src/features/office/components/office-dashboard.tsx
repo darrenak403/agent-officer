@@ -7,6 +7,7 @@ import { OfficeCanvas } from './office-canvas';
 import { TeamList } from './team-list';
 import { ActivityFeed } from './activity-feed';
 import { ContextBar } from './context-bar';
+import { PlanLimits } from './plan-limits';
 import { useOfficeHistory, useOfficeLive } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
 import { agentNames, describeTool, sessionLabel } from '../labels';
@@ -103,6 +104,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
             : <option value="">Chưa có phiên nào</option>}
         </select>
       </label>
+      <PlanLimits limits={snapshot.limits ?? null} />
       <span className={`health ${health.cls}`}>{health.text}</span>
     </header>
 

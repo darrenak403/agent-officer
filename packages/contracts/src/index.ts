@@ -38,6 +38,16 @@ export const HookEvent = z.object({
 }).strict();
 export type HookEvent = z.infer<typeof HookEvent>;
 
+const pct = z.number().min(0).max(100).nullable();
+
+/** Plan usage limits from the status line: percent used and when each window resets. */
+export const UsageLimitsEvent = z.object({
+  runtime: Runtime,
+  fiveHourPct: pct, fiveHourResetsAt: z.string().datetime().nullable(),
+  weekPct: pct, weekResetsAt: z.string().datetime().nullable(),
+}).strict();
+export type UsageLimitsEvent = z.infer<typeof UsageLimitsEvent>;
+
 const nullableText = z.string().nullable();
 const nullableTime = z.string().datetime().nullable();
 
@@ -68,6 +78,7 @@ export const OfficeSnapshotSchema = z.object({
   tasks: z.array(z.object({ id: z.string(), sessionId: z.string(), runtimeTaskId: z.string(), subject: nullableText, status: z.string() })),
   tools: z.array(z.object({ id: z.string(), sessionId: z.string(), agentId: nullableText, toolUseId: z.string(), name: z.string(), activity: nullableText, status: z.string(), startedAt: nullableTime, endedAt: nullableTime })),
   events: z.array(OfficeEventSchema),
+  limits: z.object({ fiveHourPct: pct, fiveHourResetsAt: z.string().nullable(), weekPct: pct, weekResetsAt: z.string().nullable(), updatedAt: z.string() }).nullable(),
 });
 export type OfficeSnapshot = z.infer<typeof OfficeSnapshotSchema>;
 

@@ -22,4 +22,13 @@ export class IngestController {
     if (!result.duplicate) this.gateway.publish(result.runtime, result.sequence);
     return result;
   }
+
+  @Post('limits')
+  @HttpCode(202)
+  async limits(@Headers('x-office-token') token: string | undefined, @Body() body: unknown) {
+    if (!tokenMatches(token, process.env.OFFICE_INGEST_TOKEN!)) throw new ForbiddenException();
+    const { runtime, sequence } = await this.office.saveLimits(body);
+    this.gateway.publish(runtime, sequence);
+    return { ok: true };
+  }
 }

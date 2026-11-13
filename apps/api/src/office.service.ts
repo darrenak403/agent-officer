@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { HookEvent, Runtime, type OfficeSnapshot } from '@office/contracts';
+import { HookEvent, Runtime, UsageLimitsEvent, type OfficeSnapshot } from '@office/contracts';
 import { nextAgentStatus } from '@office/domain';
 import { PrismaService } from './prisma.service';
 
@@ -137,13 +137,23 @@ export class OfficeService {
     }
   }
 
+  async saveLimits(body: unknown) {
+    const l = UsageLimitsEvent.parse(body);
+    const data = { fiveHourPct: l.fiveHourPct, fiveHourResetsAt: l.fiveHourResetsAt ? new Date(l.fiveHourResetsAt) : null,
+      weekPct: l.weekPct, weekResetsAt: l.weekResetsAt ? new Date(l.weekResetsAt) : null };
+    await this.prisma.usageLimit.upsert({ where: { runtime: l.runtime }, create: { runtime: l.runtime, ...data }, update: data });
+    const latest = await this.prisma.event.findFirst({ where: { runtime: l.runtime }, orderBy: { sequence: 'desc' }, select: { sequence: true } });
+    return { runtime: l.runtime, sequence: latest?.sequence.toString() ?? '0' };
+  }
+
   async snapshot(runtime: Runtime): Promise<OfficeSnapshot> {
-    const [sessions, tasks, tools, events, latest] = await Promise.all([
+    const [sessions, tasks, tools, events, latest, limits] = await Promise.all([
       this.prisma.session.findMany({ where: { runtime }, include: { agents: true, project: { select: { name: true } } }, orderBy: [{ lastEventAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }], take: 50 }),
       this.prisma.task.findMany({ where: { session: { runtime } }, orderBy: { createdAt: 'desc' }, take: 100 }),
       this.prisma.toolExecution.findMany({ where: { session: { runtime } }, orderBy: { lastEventAt: 'desc' }, take: 100 }),
       this.prisma.event.findMany({ where: { runtime }, orderBy: { sequence: 'desc' }, take: 100 }),
       this.prisma.event.findFirst({ where: { runtime }, orderBy: { sequence: 'desc' }, select: { sequence: true } }),
+      this.prisma.usageLimit.findUnique({ where: { runtime } }),
     ]);
     return {
       runtime, sequence: latest?.sequence.toString() ?? '0',
@@ -165,6 +175,10 @@ export class OfficeService {
       })),
       tasks: tasks.map(t => ({ id: t.id, sessionId: t.sessionId, runtimeTaskId: t.runtimeTaskId, subject: t.subject, status: t.status })),
       tools: tools.map(t => ({ id: t.id, sessionId: t.sessionId, agentId: t.agentId, toolUseId: t.toolUseId, name: t.name, activity: t.activity, status: t.status, startedAt: t.startedAt?.toISOString() ?? null, endedAt: t.endedAt?.toISOString() ?? null })),
+      limits: limits ? {
+        fiveHourPct: limits.fiveHourPct, fiveHourResetsAt: limits.fiveHourResetsAt?.toISOString() ?? null,
+        weekPct: limits.weekPct, weekResetsAt: limits.weekResetsAt?.toISOString() ?? null, updatedAt: limits.updatedAt.toISOString(),
+      } : null,
       events: events.map(e => ({
         id: e.id, sequence: e.sequence.toString(), sourceHook: e.sourceHook,
         receivedAt: e.receivedAt.toISOString(), sessionId: e.sessionId,

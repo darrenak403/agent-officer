@@ -6,7 +6,7 @@ import { io } from 'socket.io-client';
 import { OfficeEventsResponseSchema, OfficeSnapshotSchema, type OfficeSnapshot, type Runtime } from '@office/contracts';
 
 const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:4100';
-const empty = (runtime: Runtime): OfficeSnapshot => ({ runtime, sequence: '0', sessions: [], tasks: [], tools: [], events: [] });
+const empty = (runtime: Runtime): OfficeSnapshot => ({ runtime, sequence: '0', sessions: [], tasks: [], tools: [], events: [], limits: null });
 
 export function useOfficeLive(runtime: Runtime, initialRuntime: Runtime, initialSnapshot: OfficeSnapshot, initialAvailable: boolean) {
   const client = useQueryClient();

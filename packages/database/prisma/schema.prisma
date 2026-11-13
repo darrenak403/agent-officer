@@ -127,3 +127,13 @@ model ToolExecution {
   @@unique([sessionId, toolUseId])
   @@index([sessionId, status])
 }
+
+/// Plan usage limits as last reported by the runtime's status line (percent used, reset time).
+model UsageLimit {
+  runtime          String    @id
+  fiveHourPct      Float?
+  fiveHourResetsAt DateTime?
+  weekPct          Float?
+  weekResetsAt     DateTime?
+  updatedAt        DateTime  @updatedAt
+}
