@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { OfficeAgent, OfficeSnapshot, Runtime } from '@office/contracts';
 import { OfficeCanvas } from './office-canvas';
-import { ActiveAgents } from './active-agents';
+import { TeamList } from './team-list';
+import { ActivityFeed } from './activity-feed';
 import { ContextBar } from './context-bar';
 import { useOfficeHistory, useOfficeLive } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
-import { agentNames, describeTool, hookLabel, sessionLabel } from '../labels';
-import { formatTime } from '../../../lib/format';
+import { agentNames, describeTool, sessionLabel } from '../labels';
 
 type Props = { initialRuntime: Runtime; initialSnapshot: OfficeSnapshot; initialAvailable: boolean; renderedAt: number };
 /** An agent as the office shows it: readable name, presence and what it is doing. */
@@ -65,13 +65,11 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
     });
   }, [activeSession, lastHook, now, available, names]);
 
-  const selected = liveAgents.find(a => a.id === selectedId) ?? null;
   const count = (test: (a: LiveAgent) => boolean) => liveAgents.filter(test).length;
   const working = count(a => a.presence.status === 'WORKING');
   const waiting = count(a => a.presence.status === 'WAITING');
   const resting = count(a => a.presence.status === 'IDLE');
   const gone = count(a => DONE.includes(a.presence.status));
-  const runningTools = visibleTools.filter(t => !t.endedAt).length;
   const nameOf = (agentId: string | null) => (agentId && names.get(agentId)) || 'Agent chính';
   const health = !available ? { cls: '', text: 'Mất kết nối dữ liệu' } : socketConnected ? { cls: 'online', text: 'Đang cập nhật trực tiếp' } : { cls: 'polling', text: 'Đang cập nhật định kỳ' };
 
@@ -83,102 +81,56 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
     window.history.replaceState(null, '', url);
   }
 
-  return <div className="shell" data-runtime={runtime}>
-    <aside className="rail">
-      <div className="brand"><span className="brand-mark" /><strong>AGENT<br />OFFICE</strong></div>
-      <nav><a className="nav-active" href="#office">▦ &nbsp;Văn phòng</a><a href="#sessions">◷ &nbsp;Phiên làm việc</a><a href="#activity">≡ &nbsp;Hoạt động</a></nav>
-      <small>CHỈ QUAN SÁT<br />KHÔNG ĐIỀU KHIỂN AGENT</small>
-    </aside>
-    <main>
-      <header className="top">
-        <div>
-          <span className="eyebrow">VĂN PHÒNG / {runtime === 'codex' ? 'CODEX' : 'CLAUDE CODE'}</span>
-          <h1>Văn phòng {runtimeName(runtime)}</h1>
-          <p>Ai đang làm, ai đang nghỉ, ai cần bạn duyệt. Cập nhật theo từng hook.</p>
-        </div>
-        <span className={`health ${health.cls}`}>{health.text}</span>
-      </header>
+  const waitingAgents = liveAgents.filter(a => a.presence.status === 'WAITING');
+  const mainContext = activeSession?.agents.find(a => a.type === 'MAIN');
 
-      <div className="toolbar">
-        <div className="switch" role="group" aria-label="Chọn môi trường code">
-          <button aria-pressed={runtime === 'claude_code'} onClick={() => chooseRuntime('claude_code')}>Claude Code</button>
-          <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>
-        </div>
-        <div className="toolbar-stats"><span data-s="WORKING"><b key={`w${working}`}>{working}</b> ĐANG LÀM</span><span data-s="WAITING"><b key={`a${waiting}`}>{waiting}</b> CHỜ DUYỆT</span><span><b key={`r${resting}`}>{resting}</b> ĐANG NGHỈ</span><span><b key={`t${runningTools}`}>{runningTools}</b> THAO TÁC ĐANG CHẠY</span></div>
+  return <div className="app" data-runtime={runtime}>
+    <header className="topbar">
+      <div className="brand"><span className="brand-mark" aria-hidden="true" /><strong>Agent Office</strong></div>
+      <div className="switch" role="group" aria-label="Chọn môi trường code">
+        <button aria-pressed={runtime === 'claude_code'} onClick={() => chooseRuntime('claude_code')}>Claude Code</button>
+        <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>
       </div>
+      <label className="session-pick">
+        <span className="sr-only">Phiên làm việc</span>
+        <select value={activeSession?.id ?? ''} onChange={e => { setSessionId(e.target.value); setSelectedId(null); }} disabled={!sessions.length}>
+          {sessions.length ? sessions.map(s => { const l = sessionLabel(s); return <option key={s.id} value={s.id}>{l.title} · {l.meta}</option>; })
+            : <option value="">Chưa có phiên nào</option>}
+        </select>
+      </label>
+      <span className={`health ${health.cls}`}>{health.text}</span>
+    </header>
 
-      <section className="workspace" id="office">
-        <div className="panel sessions" id="sessions">
-          <div className="panel-head"><h2>Phiên làm việc</h2><small>{sessions.length} phiên</small></div>
-          {sessions.length ? sessions.map(s => {
-            const label = sessionLabel(s);
-            return <button key={s.id} className={`session ${activeSession?.id === s.id ? 'selected' : ''}`} onClick={() => { setSessionId(s.id); setSelectedId(null); }}>
-              <strong>{label.title}</strong><small>{label.meta}</small>
-              {(() => { const main = s.agents.find(a => a.type === 'MAIN'); return main ? <ContextBar agent={main} compact /> : null; })()}
-            </button>;
-          }) : <p className="panel-empty">Chưa có phiên {runtime === 'codex' ? 'Codex nào. Mở /hooks trong Codex để duyệt Office hooks, rồi bắt đầu phiên mới.' : 'Claude Code nào được quan sát.'}</p>}
-        </div>
-
-        <div className="panel room-panel">
-          <div className="panel-head">
-            <h2>Sơ đồ văn phòng</h2>
-            <div className="view-switch"><button aria-pressed={view === 'office'} onClick={() => setView('office')}>Bản đồ</button><button aria-pressed={view === 'list'} onClick={() => setView('list')}>Danh sách</button></div>
+    <div className="stage">
+      <section className="hero" aria-label="Sơ đồ văn phòng">
+        <div className="hero-bar">
+          <div className="stats">
+            <span data-s="WORKING"><b key={`w${working}`}>{working}</b>đang làm</span>
+            <span data-s="WAITING"><b key={`a${waiting}`}>{waiting}</b>chờ duyệt</span>
+            <span data-s="IDLE"><b key={`r${resting}`}>{resting}</b>đang nghỉ</span>
+            <span data-s="STOPPED"><b key={`g${gone}`}>{gone}</b>đã rời</span>
           </div>
-          {view === 'office' ? <>
-            <div className="room">
-              <OfficeCanvas key={runtime} runtime={runtime} agents={liveAgents} selectedId={selectedId} onSelect={setSelectedId} />
-              {!liveAgents.length && <div className="room-empty">Văn phòng đang chờ agent<small>Bản đồ sẽ cập nhật khi có agent bắt đầu làm việc.</small></div>}
-            </div>
-            <div className="legend">
-              <span data-s="WORKING">Bàn làm việc · đang làm {working}</span><span data-s="WAITING">Chờ duyệt {waiting}</span>
-              <span data-s="IDLE">Khu nghỉ · đã xong lượt {resting}</span><span data-s="STOPPED">Đã rời / mất tín hiệu {gone}</span>
-            </div>
-          </> : <div className="agent-list">
-            {liveAgents.length ? liveAgents.map(a => <button key={a.id} className={selectedId === a.id ? 'selected' : ''} onClick={() => setSelectedId(a.id)}>
-              <strong>{a.displayName} · {a.presence.label}</strong><span>{a.doing ?? a.mission ?? a.presence.detail}</span>
-              <ContextBar agent={a} compact />
-            </button>) : <p className="panel-empty">Chưa có agent trong phiên này.</p>}
-          </div>}
+          {mainContext && <div className="hero-context"><ContextBar agent={mainContext} compact /></div>}
+          <div className="view-switch"><button aria-pressed={view === 'office'} onClick={() => setView('office')}>Bản đồ</button><button aria-pressed={view === 'list'} onClick={() => setView('list')}>Danh sách</button></div>
         </div>
-
-        <div className="side-stack">
-        <ActiveAgents agents={liveAgents} now={now} selectedId={selectedId} onSelect={setSelectedId} />
-        <div className="panel inspector">
-          <div className="panel-head"><h2>Chi tiết agent</h2><small>{selected ? (selected.type === 'MAIN' ? 'Agent chính' : 'Subagent') : 'Bấm vào một agent'}</small></div>
-          {selected ? <dl>
-            <dt>Tên</dt><dd>{selected.displayName}</dd>
-            <dt>Trạng thái</dt><dd>{selected.presence.label}. {selected.presence.detail}</dd>
-            <dt>Đang làm gì</dt><dd>{selected.doing ?? 'Chưa có thao tác nào'}</dd>
-            <dt>Nhiệm vụ được giao</dt><dd>{selected.type === 'MAIN' ? 'Làm việc trực tiếp với bạn' : selected.mission ?? 'Không có mô tả'}</dd>
-            <dt>Hoạt động gần nhất</dt><dd>{formatTime(selected.lastSeenAt)}</dd>
-            <dt>Dự án</dt><dd>{activeSession?.projectName ?? 'Chưa rõ'}</dd>
-            <dt>Bộ nhớ ngữ cảnh</dt><dd><ContextBar agent={selected} /></dd>
-          </dl> : <p className="panel-empty">Chọn một agent trên bản đồ để xem nó đang làm gì.</p>}
-        </div>
-        </div>
+        {waitingAgents.length > 0 && <div className="alert" role="status"><b>!</b>{waitingAgents.map(a => a.displayName).join(', ')} đang chờ bạn duyệt trong terminal</div>}
+        {view === 'office' ? <div className="room">
+          <OfficeCanvas key={runtime} runtime={runtime} agents={liveAgents} selectedId={selectedId} onSelect={setSelectedId} />
+          {!liveAgents.length && <div className="room-empty">Văn phòng đang chờ agent<small>Bản đồ sẽ cập nhật khi có agent bắt đầu làm việc.</small></div>}
+        </div> : <div className="agent-list">
+          {liveAgents.length ? liveAgents.map(a => <button key={a.id} className={selectedId === a.id ? 'selected' : ''} onClick={() => setSelectedId(a.id)}>
+            <strong>{a.displayName} · {a.presence.label}</strong><span>{a.doing ?? a.mission ?? a.presence.detail}</span>
+            <ContextBar agent={a} compact />
+          </button>) : <p className="empty">Chưa có agent trong phiên này.</p>}
+        </div>}
+        <p className="legend">Bàn làm việc: đang làm · Khu nghỉ: đã trả lời xong · Cửa ra: đã rời hoặc mất tín hiệu 5 phút</p>
       </section>
 
-      <section className="task-tools">
-        <div className="panel">
-          <div className="panel-head"><h2>Công việc</h2><small>{visibleTasks.length} việc</small></div>
-          {visibleTasks.length ? <ol>{visibleTasks.map(task => <li key={task.id}><strong>{task.subject ?? 'Công việc không có tiêu đề'}</strong><span>{task.status === 'COMPLETED' ? 'Xong' : 'Đang làm'}</span></li>)}</ol>
-            : <p className="panel-empty">Phiên này chưa tạo danh sách công việc.</p>}
-        </div>
-        <div className="panel">
-          <div className="panel-head"><h2>Thao tác gần đây</h2><small>{visibleTools.length} thao tác · {runningTools} đang chạy</small></div>
-          {visibleTools.length ? <ol>{visibleTools.map(tool => <li key={tool.id}>
-            <strong>{describeTool(tool.name, tool.activity)}</strong>
-            <span>{nameOf(tool.agentId)} · {tool.endedAt ? (tool.status === 'FAILED' ? 'Lỗi' : 'Xong') : 'Đang chạy'} · {formatTime(tool.startedAt)}</span>
-          </li>)}</ol> : <p className="panel-empty">Chưa có thao tác nào.</p>}
-        </div>
-      </section>
-
-      <section className="panel timeline" id="activity">
-        <div className="panel-head"><h2>Dòng thời gian</h2><small>{visibleEvents.length} sự kiện</small></div>
-        {visibleEvents.length ? <ol>{visibleEvents.map(e => <li key={e.id}><span>{nameOf(e.agentId)}: {hookLabel(e.sourceHook, e.toolName)}</span><time>{formatTime(e.receivedAt)}</time></li>)}</ol>
-          : <p className="panel-empty">Chưa có hoạt động nào.</p>}
-      </section>
-    </main>
+      <aside className="drawer">
+        <TeamList agents={liveAgents} now={now} selectedId={selectedId} onSelect={setSelectedId} />
+        <ActivityFeed tools={visibleTools} events={visibleEvents} tasks={visibleTasks} nameOf={nameOf} />
+      </aside>
+    </div>
   </div>;
 }
 

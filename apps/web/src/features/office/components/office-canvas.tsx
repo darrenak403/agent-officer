@@ -185,30 +185,46 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
   }
   container.addChild(g);
 
-  if (agent.status === 'WAITING' || agent.status === 'FAILED' || agent.status === 'UNKNOWN') {
-    const bubble = new pixi.Graphics();
-    rect(bubble, 18, -57, 25, 24, status.color);
-    rect(bubble, 20, -33, 6, 5, status.color);
-    container.addChild(bubble);
+  if (agent.status === 'FAILED' || agent.status === 'UNKNOWN') {
+    const mark = new pixi.Graphics();
+    rect(mark, 18, -57, 25, 24, status.color);
+    container.addChild(mark);
     label(pixi, container, agent.status === 'UNKNOWN' ? '?' : '!', 25, -57, 18, '#182236', 'bold');
   }
 
-  const name = agent.displayName ?? (agent.type === 'MAIN' ? 'Agent chính' : 'Trợ lý');
-  // Working agents sit at roomy desks, so they also get a third line saying what they are doing.
-  const doing = agent.status === 'WORKING' && agent.doing ? agent.doing : null;
-  const width = doing ? 150 : 112;
-  const height = doing ? 58 : 42;
+  // Speech bubble: what the agent is doing, said by the agent itself. Only for states that need eyes.
+  const say = agent.status === 'WAITING' ? `! ${agent.doing ?? 'Cần bạn duyệt'}` : agent.status === 'WORKING' ? agent.doing ?? 'Đang suy nghĩ…' : null;
+  if (say) {
+    const text = new pixi.Text({ text: say.length > 22 ? `${say.slice(0, 21)}…` : say, style: { fontFamily: 'Courier New, monospace', fontSize: 11, fontWeight: 'bold', fill: '#182236' } });
+    const w = Math.ceil(text.width) + 14;
+    const top = agent.status === 'WORKING' ? -122 : -78;
+    const bubble = new pixi.Graphics();
+    const fill = agent.status === 'WAITING' ? COLOR.amber : COLOR.cream;
+    rect(bubble, 8 - w / 2, top, w, 22, fill);
+    rect(bubble, 4, top + 22, 8, 5, fill);
+    rect(bubble, 8 - w / 2, top + 22, w, 2, '#0e1625');
+    container.addChild(bubble);
+    text.x = 15 - w / 2; text.y = top + 4;
+    container.addChild(text);
+  }
+
+  // Name tag with a status edge and a pixel context meter underneath.
+  const name = (agent.displayName ?? (agent.type === 'MAIN' ? 'Agent chính' : 'Trợ lý')).slice(0, 16);
+  const width = 104;
   const plate = new pixi.Graphics();
-  rect(plate, -47, 36, width, height, '#152235');
-  rect(plate, -47, 36, 4, height, status.color);
-  if (selected) plate.rect(-50, 33, width + 6, height + 6).stroke({ color: COLOR.cream, width: 2 });
+  rect(plate, -44, 37, width, 22, '#152235');
+  rect(plate, -44, 37, 4, 22, status.color);
+  if (agent.contextTokens != null && agent.contextLimit) {
+    const ratio = Math.min(1, agent.contextTokens / agent.contextLimit);
+    rect(plate, -40, 59, width - 4, 4, '#0e1625');
+    rect(plate, -40, 59, Math.max(2, Math.round((width - 4) * ratio)), 4, ratio >= 0.85 ? '#e0705a' : ratio >= 0.6 ? '#e6c35c' : COLOR.teal);
+  }
+  if (selected) plate.rect(-47, 34, width + 6, 32).stroke({ color: COLOR.cream, width: 2 });
   container.addChild(plate);
-  label(pixi, container, name.slice(0, doing ? 20 : 14), -37, 39, 11, COLOR.cream, 'bold');
-  if (doing) label(pixi, container, doing.length > 22 ? `${doing.slice(0, 21)}…` : doing, -37, 73, 10, COLOR.muted);
-  label(pixi, container, (agent.presence?.label ?? status.label).slice(0, 16), -37, 56, 10, status.color);
+  label(pixi, container, name, -35, 41, 11, COLOR.cream, 'bold');
   container.eventMode = 'static';
   container.cursor = 'pointer';
-  container.hitArea = new pixi.Rectangle(-51, -43, width + 10, 81 + height);
+  container.hitArea = new pixi.Rectangle(-48, -45, width + 8, 112);
   container.on('pointertap', () => onSelect(agent.id));
   if (['STOPPED', 'UNKNOWN', 'COMPLETED'].includes(agent.status)) container.alpha = 0.76;
   return container;
