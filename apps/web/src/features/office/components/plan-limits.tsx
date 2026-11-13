@@ -36,6 +36,7 @@ export function PlanLimits({ limits }: { limits: OfficeSnapshot['limits'] }) {
   if (now == null) return null;
   return (
     <div className="plan-limits">
+      {!limits && <span className="limit-empty" title="Số liệu đến từ status line của Claude Code CLI; app desktop không chạy status line">Hạn mức gói: mở <code>claude</code> trong terminal để lấy số liệu</span>}
       {limits && <>
         <Limit name="5 giờ" pct={limits.fiveHourPct} resetsAt={limits.fiveHourResetsAt} now={now} />
         <Limit name="Tuần" pct={limits.weekPct} resetsAt={limits.weekResetsAt} now={now} withDay />
