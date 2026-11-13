@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Visual Multi-Agent Office · Bản xem trước</title>
+  <style>
+    :root{color-scheme:dark;--bg:#111716;--panel:#1a2220;--panel2:#202b27;--line:#3c4c44;--text:#ecf1e6;--muted:#a6b5a8;--accent:#e4a85d;--soft:#3d3022;--radius:8px}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body[data-runtime="codex"]{--accent:#6bc5b1;--soft:#193c37}
+    button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .shell{min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr)}
+    .rail{background:#151d1a;border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:32px}
+    .brand{display:flex;gap:12px;align-items:center;padding:4px 8px}.brand-mark{width:30px;height:30px;background:var(--accent);box-shadow:inset -6px -6px 0 #0003;image-rendering:pixelated;clip-path:polygon(0 0,76% 0,76% 24%,100% 24%,100% 100%,24% 100%,24% 76%,0 76%)}
+    .brand strong{font-size:15px;line-height:1.1;letter-spacing:.04em}.brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+    .rail h2,.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}.rail h2{padding:0 12px;margin:0 0 10px}
+    .nav-item{display:block;padding:10px 12px;border:1px solid transparent;border-radius:var(--radius);color:var(--muted)}.nav-item.active{color:var(--text);background:var(--soft);border-color:var(--line)}
+    .rail-note{margin-top:auto;padding:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    main{min-width:0;padding:22px 28px 26px;display:grid;grid-template-rows:auto auto minmax(430px,1fr) auto;gap:18px;max-width:1740px;width:100%;margin:auto}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.top h1{font-size:28px;line-height:1.15;margin:5px 0 0;letter-spacing:-.025em}.top p{margin:7px 0 0;color:var(--muted)}
+    .badge{border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:var(--radius);font-size:12px;white-space:nowrap}.badge::before{content:"";display:inline-block;width:8px;height:8px;background:#858f86;margin-right:8px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-block:1px solid var(--line);padding:13px 0}.segmented{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}.segmented button{border:0;background:none;color:var(--muted);padding:8px 20px;border-radius:5px;font-weight:700}.segmented button[aria-pressed="true"]{background:var(--accent);color:#101714}.toolbar-note{color:var(--muted);font-size:13px}
+    .workspace{display:grid;grid-template-columns:minmax(170px,220px) minmax(320px,1fr) minmax(220px,280px);gap:14px;min-height:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}.panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.panel-head h2{margin:0;font-size:14px;letter-spacing:.02em}.panel-head span{color:var(--muted);font-size:12px}.empty-side{padding:24px 18px;color:var(--muted);font-size:13px}.empty-side strong{color:var(--text);display:block;margin-bottom:6px}
+    .room{position:relative;min-height:410px;background-color:#28372f;background-image:linear-gradient(#ffffff0a 1px,transparent 1px),linear-gradient(90deg,#ffffff0a 1px,transparent 1px);background-size:24px 24px;overflow:hidden}
+    .room::before{content:"";position:absolute;inset:0 0 auto;height:70px;background:repeating-linear-gradient(90deg,#35483c 0 72px,#2f4036 72px 76px);border-bottom:8px solid #17251f}
+    .room-label{position:absolute;top:18px;left:20px;background:#15231e;color:#c5d8c5;border:2px solid #607864;padding:4px 9px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;z-index:1}
+    .desk{position:absolute;width:90px;height:50px;background:#a6784e;border:6px solid #5e412f;box-shadow:0 10px 0 #172720,0 14px 0 #15241d;image-rendering:pixelated}.desk::before{content:"";position:absolute;width:30px;height:23px;left:24px;top:-23px;background:#17242c;border:5px solid #708a89;box-shadow:0 5px 0 #17242c}.desk::after{content:"";position:absolute;width:40px;height:18px;left:19px;top:48px;background:#557767;border:5px solid #274136}.d1{top:130px;left:18%}.d2{top:130px;right:18%}.d3{bottom:82px;left:18%}.d4{bottom:82px;right:18%}
+    .room-empty{position:absolute;inset:45% 10% auto;background:#121d19e8;border:1px solid #7d9a83;padding:16px 18px;text-align:center;box-shadow:6px 6px 0 #0b1410}.room-empty strong{display:block;font-size:15px}.room-empty span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+    .timeline{display:grid;grid-template-columns:150px 1fr;min-height:92px}.timeline h2{font-size:14px;margin:0;padding:20px;border-right:1px solid var(--line)}.timeline p{color:var(--muted);margin:0;padding:20px;font-size:13px}
+    .prototype{font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+    @media(max-width:1040px){.workspace{grid-template-columns:170px minmax(320px,1fr)}.inspector{grid-column:1/-1}.room{min-height:390px}}
+    @media(max-width:720px){.shell{display:block}.rail{display:none}main{padding:18px;grid-template-rows:auto auto auto auto}.top{display:block}.top h1{font-size:23px}.badge{display:inline-block;margin-top:12px}.workspace{display:block}.workspace>.panel{margin-bottom:12px}.room{min-height:360px}.timeline{display:block}.timeline h2{border-right:0;border-bottom:1px solid var(--line);padding:14px 18px}.timeline p{padding:14px 18px}}
+    @media(prefers-reduced-motion:no-preference){.segmented button{transition:background .15s,color .15s}.room-empty{transition:border-color .2s}}
+  </style>
+</head>
+<body data-runtime="claude_code">
+  <div class="shell">
+    <aside class="rail" aria-label="Điều hướng bản xem trước">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><strong>AGENT<br>OFFICE</strong><small>Local observatory</small></div></div>
+      <nav><h2>Workspace</h2><span class="nav-item active">▦ &nbsp;Văn phòng</span><span class="nav-item">◷ &nbsp;Lịch sử phiên</span><span class="nav-item">≡ &nbsp;Hoạt động</span></nav>
+      <div class="rail-note">Bản xem trước giao diện.<br>Không có dữ liệu agent mô phỏng.</div>
+    </aside>
+    <main>
+      <header class="top"><div><span class="eyebrow">Visual Multi-Agent Office</span><h1 id="title">Văn phòng Claude</h1><p>Quan sát agent từ sự kiện thực tế trên máy của bạn.</p></div><span class="badge">Chưa kết nối collector</span></header>
+      <div class="toolbar"><div class="segmented" role="group" aria-label="Chọn môi trường code"><button type="button" data-select="claude_code" aria-pressed="true">Claude</button><button type="button" data-select="codex" aria-pressed="false">Codex</button></div><span class="toolbar-note" id="scope">Chỉ hiển thị session và agent của Claude Code</span></div>
+      <section class="workspace" aria-label="Văn phòng và thông tin agent">
+        <div class="panel"><div class="panel-head"><h2>Phiên làm việc</h2><span>0 phiên</span></div><div class="empty-side"><strong>Chưa có phiên</strong><span id="session-copy">Khi Claude Code phát sự kiện, phiên sẽ xuất hiện tại đây.</span></div></div>
+        <div class="panel"><div class="panel-head"><h2>Không gian chung</h2><span>0 agent được quan sát</span></div><div class="room"><span class="room-label">Shared workspace</span><span class="desk d1"></span><span class="desk d2"></span><span class="desk d3"></span><span class="desk d4"></span><div class="room-empty" role="status"><strong>Chưa có agent được quan sát</strong><span>Văn phòng sẽ cập nhật khi có bằng chứng từ runtime.</span></div></div></div>
+        <div class="panel inspector"><div class="panel-head"><h2>Agent inspector</h2><span>Chưa chọn</span></div><div class="empty-side"><strong>Chọn một agent</strong>Trạng thái, tool, task và sự kiện chứng minh sẽ xuất hiện tại đây.</div></div>
+      </section>
+      <section class="panel timeline"><h2>Hoạt động gần đây</h2><p id="activity-copy">Chưa có sự kiện Claude Code được ghi nhận.</p></section>
+      <span class="prototype">Interface preview · Phase 0 · Read-only</span>
+    </main>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const buttons = [...document.querySelectorAll('[data-select]')];
+    function select(runtime) {
+      const codex = runtime === 'codex';
+      const value = codex ? 'codex' : 'claude_code';
+      document.body.dataset.runtime = value;
+      document.getElementById('title').textContent = codex ? 'Văn phòng Codex' : 'Văn phòng Claude';
+      document.getElementById('scope').textContent = `Chỉ hiển thị session và agent của ${codex ? 'Codex' : 'Claude Code'}`;
+      document.getElementById('session-copy').textContent = `Khi ${codex ? 'Codex' : 'Claude Code'} phát sự kiện, phiên sẽ xuất hiện tại đây.`;
+      document.getElementById('activity-copy').textContent = `Chưa có sự kiện ${codex ? 'Codex' : 'Claude Code'} được ghi nhận.`;
+      for (const button of buttons) button.setAttribute('aria-pressed', String(button.dataset.select === value));
+      params.set('runtime', value);
+      history.replaceState(null, '', `${location.pathname}?${params}`);
+    }
+    for (const button of buttons) button.addEventListener('click', () => select(button.dataset.select));
+    select(params.get('runtime'));
+  </script>
+</body>
+</html>
