@@ -47,6 +47,10 @@ model Agent {
   type               String
   status             String   @default("DISCOVERED")
   currentTool        String?
+  /// Short human summary of what the agent is doing now (or did last).
+  currentActivity    String?
+  /// Subagent only: the description the parent gave when delegating it.
+  mission            String?
   identityConfidence String   @default("LOW")
   lastSeenAt         DateTime?
   lastAppliedAt      DateTime?
@@ -105,6 +109,7 @@ model ToolExecution {
   agent       Agent?    @relation(fields: [agentId], references: [id])
   toolUseId   String
   name        String
+  activity    String?
   status      String    @default("RUNNING")
   startedAt   DateTime?
   endedAt     DateTime?

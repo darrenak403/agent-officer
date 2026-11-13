@@ -62,7 +62,7 @@ export class OfficeService {
           ? await tx.toolExecution.upsert({
             where: { sessionId_toolUseId: { sessionId: session.id, toolUseId: event.toolUseId } },
             create: { sessionId: session.id, agentId: agent?.id, toolUseId: event.toolUseId,
-              name: event.toolName, status: toolStatus,
+              name: event.toolName, activity: event.activity ?? null, status: toolStatus,
               startedAt: event.sourceHook === 'PreToolUse' ? seenAt : null,
               endedAt: toolStatus === 'RUNNING' ? null : seenAt, lastEventAt: seenAt },
             update: {},
@@ -91,6 +91,7 @@ export class OfficeService {
         if (tool && seenAt >= tool.lastEventAt) {
           await tx.toolExecution.update({ where: { id: tool.id }, data: {
             status: toolStatus, endedAt: toolStatus === 'RUNNING' ? null : seenAt,
+            ...(event.activity ? { activity: event.activity } : {}),
             startedAt: event.sourceHook === 'PreToolUse' ? seenAt : tool.startedAt,
             lastEventAt: seenAt,
             ...(agent && !tool.agentId ? { agentId: agent.id } : {}),
@@ -100,7 +101,23 @@ export class OfficeService {
           const activeTool = await tx.toolExecution.findFirst({
             where: { agentId: agent.id, status: 'RUNNING' }, orderBy: { startedAt: 'desc' },
           });
+          // Subagents inherit the description their parent wrote when delegating them.
+          const mission = event.sourceHook === 'SubagentStart' && !agent.mission
+            ? (await tx.toolExecution.findFirst({
+              where: { sessionId: session.id, name: { in: ['Agent', 'Task'] }, status: 'RUNNING', activity: { not: null } },
+              orderBy: { startedAt: 'desc' }, select: { activity: true },
+            }))?.activity ?? null
+            : null;
+          const latestTool = event.toolUseId ? await tx.toolExecution.findUnique({
+            where: { sessionId_toolUseId: { sessionId: session.id, toolUseId: event.toolUseId } }, select: { activity: true, name: true },
+          }) : null;
           await tx.agent.update({ where: { id: agent.id }, data: {
+            ...(mission ? { mission } : {}),
+            // The role often arrives after the first event; upgrade the generic placeholder name.
+            ...(event.agentType && agent.type === 'SUBAGENT' && agent.name === 'Subagent' ? { name: event.agentType } : {}),
+            // Keep the last thing done while the agent reasons or rests; a new prompt starts fresh.
+            ...(event.sourceHook === 'UserPromptSubmit' ? { currentActivity: null }
+              : latestTool ? { currentActivity: latestTool.activity ?? null } : {}),
             status: activeTool ? 'WORKING' : nextAgentStatus(agent.status as Parameters<typeof nextAgentStatus>[0], event.sourceHook),
             currentTool: activeTool?.name ?? null,
             lastSeenAt: seenAt, lastAppliedAt: seenAt,
@@ -119,7 +136,7 @@ export class OfficeService {
 
   async snapshot(runtime: Runtime): Promise<OfficeSnapshot> {
     const [sessions, tasks, tools, events, latest] = await Promise.all([
-      this.prisma.session.findMany({ where: { runtime }, include: { agents: true }, orderBy: { createdAt: 'desc' }, take: 50 }),
+      this.prisma.session.findMany({ where: { runtime }, include: { agents: true, project: { select: { name: true } } }, orderBy: [{ lastEventAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }], take: 50 }),
       this.prisma.task.findMany({ where: { session: { runtime } }, orderBy: { createdAt: 'desc' }, take: 100 }),
       this.prisma.toolExecution.findMany({ where: { session: { runtime } }, orderBy: { lastEventAt: 'desc' }, take: 100 }),
       this.prisma.event.findMany({ where: { runtime }, orderBy: { sequence: 'desc' }, take: 100 }),
@@ -128,7 +145,7 @@ export class OfficeService {
     return {
       runtime, sequence: latest?.sequence.toString() ?? '0',
       sessions: sessions.map(s => ({
-        id: s.id, runtime, runtimeSessionId: s.runtimeSessionId,
+        id: s.id, runtime, runtimeSessionId: s.runtimeSessionId, projectName: s.project?.name ?? null,
         status: s.status === 'ACTIVE' && s.lastEventAt && Date.now() - s.lastEventAt.getTime() > 120000
           ? 'UNKNOWN' : s.status as 'ACTIVE' | 'ENDED' | 'UNKNOWN',
         startedAt: s.startedAt?.toISOString() ?? null,
@@ -136,13 +153,13 @@ export class OfficeService {
         agents: s.agents.map(a => ({
           id: a.id, runtimeAgentId: a.runtimeAgentId, name: a.name, type: a.type,
           status: a.status as OfficeSnapshot['sessions'][number]['agents'][number]['status'],
-          currentTool: a.currentTool, lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
+          currentTool: a.currentTool, currentActivity: a.currentActivity, mission: a.mission, lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
           identityConfidence: a.identityConfidence as 'HIGH' | 'MEDIUM' | 'LOW',
           parentAgentId: a.parentAgentId,
         })),
       })),
       tasks: tasks.map(t => ({ id: t.id, sessionId: t.sessionId, runtimeTaskId: t.runtimeTaskId, subject: t.subject, status: t.status })),
-      tools: tools.map(t => ({ id: t.id, sessionId: t.sessionId, agentId: t.agentId, toolUseId: t.toolUseId, name: t.name, status: t.status, startedAt: t.startedAt?.toISOString() ?? null, endedAt: t.endedAt?.toISOString() ?? null })),
+      tools: tools.map(t => ({ id: t.id, sessionId: t.sessionId, agentId: t.agentId, toolUseId: t.toolUseId, name: t.name, activity: t.activity, status: t.status, startedAt: t.startedAt?.toISOString() ?? null, endedAt: t.endedAt?.toISOString() ?? null })),
       events: events.map(e => ({
         id: e.id, sequence: e.sequence.toString(), sourceHook: e.sourceHook,
         receivedAt: e.receivedAt.toISOString(), sessionId: e.sessionId,

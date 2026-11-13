@@ -5,7 +5,7 @@ import type { OfficeAgent, Runtime } from '@office/contracts';
 
 type Pixi = typeof import('pixi.js');
 /** Canvas agents carry the projected presence label so the map and inspector agree. */
-export type CanvasAgent = OfficeAgent & { presence?: { label: string } };
+export type CanvasAgent = OfficeAgent & { presence?: { label: string }; displayName?: string; doing?: string | null };
 type Scene = { paint: (agents: CanvasAgent[], selectedId: string | null) => void; destroy: () => void };
 
 const SIZE = { width: 1120, height: 650 };
@@ -139,7 +139,7 @@ function background(pixi: Pixi, runtime: Runtime) {
   label(pixi, stage, 'BÀN LÀM VIỆC', 43, 159, 15, COLOR.cream, 'bold');
   label(pixi, stage, 'KHU NGHỈ', 870, 162, 15, COLOR.cream, 'bold');
   label(pixi, stage, 'ĐÃ DỪNG / CHƯA RÕ', 866, 507, 12, COLOR.muted);
-  label(pixi, stage, 'EVENTS  ·  AGENTS  ·  TOOLS', 930, 77, 10, COLOR.cream);
+  label(pixi, stage, 'CHỈ QUAN SÁT', 932, 80, 12, COLOR.cream, 'bold');
   label(pixi, stage, 'CHỈ HIỂN THỊ DỮ LIỆU QUAN SÁT', 43, 622, 11, COLOR.muted);
   return stage;
 }
@@ -193,18 +193,22 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
     label(pixi, container, agent.status === 'UNKNOWN' ? '?' : '!', 25, -57, 18, '#182236', 'bold');
   }
 
-  const id = agent.runtimeAgentId?.slice(0, 4).toUpperCase() ?? agent.id.slice(0, 4).toUpperCase();
-  const name = agent.type === 'MAIN' ? 'Main agent' : agent.name === 'Subagent' ? `Agent ${id}` : agent.name;
+  const name = agent.displayName ?? (agent.type === 'MAIN' ? 'Agent chính' : 'Trợ lý');
+  // Working agents sit at roomy desks, so they also get a third line saying what they are doing.
+  const doing = agent.status === 'WORKING' && agent.doing ? agent.doing : null;
+  const width = doing ? 150 : 112;
+  const height = doing ? 58 : 42;
   const plate = new pixi.Graphics();
-  rect(plate, -47, 36, 112, 42, '#152235');
-  rect(plate, -47, 36, 4, 42, status.color);
-  if (selected) plate.rect(-50, 33, 118, 48).stroke({ color: COLOR.cream, width: 2 });
+  rect(plate, -47, 36, width, height, '#152235');
+  rect(plate, -47, 36, 4, height, status.color);
+  if (selected) plate.rect(-50, 33, width + 6, height + 6).stroke({ color: COLOR.cream, width: 2 });
   container.addChild(plate);
-  label(pixi, container, name.slice(0, 14), -37, 39, 11, COLOR.cream, 'bold');
+  label(pixi, container, name.slice(0, doing ? 20 : 14), -37, 39, 11, COLOR.cream, 'bold');
+  if (doing) label(pixi, container, doing.length > 22 ? `${doing.slice(0, 21)}…` : doing, -37, 73, 10, COLOR.muted);
   label(pixi, container, (agent.presence?.label ?? status.label).slice(0, 16), -37, 56, 10, status.color);
   container.eventMode = 'static';
   container.cursor = 'pointer';
-  container.hitArea = new pixi.Rectangle(-51, -43, 122, 123);
+  container.hitArea = new pixi.Rectangle(-51, -43, width + 10, 81 + height);
   container.on('pointertap', () => onSelect(agent.id));
   if (['STOPPED', 'UNKNOWN', 'COMPLETED'].includes(agent.status)) container.alpha = 0.76;
   return container;

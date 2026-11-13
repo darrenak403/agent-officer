@@ -20,6 +20,7 @@ export const HookEvent = z.object({
   turnId: optionalShort,
   toolName: optionalShort,
   toolUseId: optionalShort,
+  activity: z.string().min(1).max(160).nullable().optional(),
   taskId: optionalShort,
   taskSubject: z.string().min(1).max(512).nullable().optional(),
   projectPath: z.string().max(4096).nullable().optional(),
@@ -34,13 +35,13 @@ const nullableTime = z.string().datetime().nullable();
 
 export const OfficeAgentSchema = z.object({
   id: z.string(), runtimeAgentId: nullableText, name: z.string(), type: z.string(),
-  status: AgentStatus, currentTool: nullableText, lastSeenAt: nullableTime,
+  status: AgentStatus, currentTool: nullableText, currentActivity: nullableText, mission: nullableText, lastSeenAt: nullableTime,
   identityConfidence: z.enum(['HIGH', 'MEDIUM', 'LOW']), parentAgentId: nullableText,
 });
 export type OfficeAgent = z.infer<typeof OfficeAgentSchema>;
 
 export const OfficeSessionSchema = z.object({
-  id: z.string(), runtime: Runtime, runtimeSessionId: z.string(),
+  id: z.string(), runtime: Runtime, runtimeSessionId: z.string(), projectName: nullableText,
   status: z.enum(['ACTIVE', 'ENDED', 'UNKNOWN']), startedAt: nullableTime,
   endedAt: nullableTime, agents: z.array(OfficeAgentSchema),
 });
@@ -55,7 +56,7 @@ export const OfficeEventSchema = z.object({
 export const OfficeSnapshotSchema = z.object({
   runtime: Runtime, sequence: z.string(), sessions: z.array(OfficeSessionSchema),
   tasks: z.array(z.object({ id: z.string(), sessionId: z.string(), runtimeTaskId: z.string(), subject: nullableText, status: z.string() })),
-  tools: z.array(z.object({ id: z.string(), sessionId: z.string(), agentId: nullableText, toolUseId: z.string(), name: z.string(), status: z.string(), startedAt: nullableTime, endedAt: nullableTime })),
+  tools: z.array(z.object({ id: z.string(), sessionId: z.string(), agentId: nullableText, toolUseId: z.string(), name: z.string(), activity: nullableText, status: z.string(), startedAt: nullableTime, endedAt: nullableTime })),
   events: z.array(OfficeEventSchema),
 });
 export type OfficeSnapshot = z.infer<typeof OfficeSnapshotSchema>;
