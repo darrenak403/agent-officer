@@ -34,7 +34,12 @@ function doingText(agent: OfficeAgent, presence: Presence): string | null {
 
 function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt }: Props) {
   const [runtime, setRuntime] = useState<Runtime>(initialRuntime);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedIdRaw] = useState<string | null>(null);
+  // Picking an agent on the map also brings its explanation into view in the drawer.
+  const setSelectedId = (id: string | null) => {
+    setSelectedIdRaw(id);
+    if (id) requestAnimationFrame(() => document.getElementById(`agent-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  };
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [view, setView] = useState<'office' | 'list'>('office');
   const { snapshot, available, socketConnected } = useOfficeLive(runtime, initialRuntime, initialSnapshot, initialAvailable);
@@ -127,7 +132,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
       </section>
 
       <aside className="drawer">
-        <TeamList agents={liveAgents} now={now} selectedId={selectedId} onSelect={setSelectedId} />
+        <TeamList agents={liveAgents} tools={visibleTools} now={now} selectedId={selectedId} onSelect={setSelectedId} />
         <ActivityFeed tools={visibleTools} events={visibleEvents} tasks={visibleTasks} nameOf={nameOf} />
       </aside>
     </div>

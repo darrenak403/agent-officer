@@ -99,3 +99,22 @@ h2{margin:0;font-size:13px;font-weight:700}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .team .gone-toggle button{display:block;color:var(--muted);font-size:13px;padding:8px 12px 8px 34px}.team .gone-toggle button:hover{color:var(--text)}
+/* Agent focus: what it is doing, why, the steps so far, memory left */
+.focus{display:grid;gap:16px;margin:4px 4px 8px;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);animation:enter .2s var(--ease) both}
+.focus-now{display:grid;gap:4px;padding:12px 16px;background:var(--s2);border-radius:var(--r);position:relative;overflow:hidden}
+.focus[data-s=WORKING] .focus-now{background:#1c3330}.focus[data-s=WAITING] .focus-now{background:#3a2c1d}
+.focus-kicker{font-size:12px;font-weight:600;color:var(--muted)}
+.focus[data-s=WORKING] .focus-kicker{color:var(--working)}.focus[data-s=WAITING] .focus-kicker{color:var(--waiting)}
+.focus-headline{margin:0;font-size:17px;line-height:1.35;font-weight:700;overflow-wrap:anywhere}
+.focus-sub{margin:0;font-size:13px;color:var(--muted)}
+.work-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,var(--working),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:shimmer 1.6s cubic-bezier(.45,0,.55,1) infinite}
+.focus-facts{display:grid;gap:12px;margin:0}.focus-facts div{display:grid;gap:2px}
+.focus-facts dt,.focus h3{margin:0;font-size:12px;font-weight:600;color:var(--dim)}
+.focus-facts dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.focus-steps{display:grid;gap:8px}.focus-steps ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;border-left:2px solid var(--line);margin-left:3px}
+.focus-steps li{display:grid;gap:0;padding:4px 0 4px 16px;position:relative}
+.focus-steps li::before{content:'';position:absolute;left:-6px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--dim);border:2px solid var(--bg)}
+.focus-steps li[data-state=run]::before{background:var(--working);animation:pulse 1.6s var(--ease) infinite}.focus-steps li[data-state=fail]::before{background:var(--fail)}
+.step-text{font-size:13px;overflow-wrap:anywhere}.step-meta{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.focus-context{display:grid;gap:4px}
+@keyframes shimmer{from{background-position:-40% 0}to{background-position:140% 0}}
