@@ -51,6 +51,10 @@ model Agent {
   currentActivity    String?
   /// Subagent only: the description the parent gave when delegating it.
   mission            String?
+  /// Main agent only: tokens in the context window after the latest turn, the window size and model.
+  contextTokens      Int?
+  contextLimit       Int?
+  model              String?
   identityConfidence String   @default("LOW")
   lastSeenAt         DateTime?
   lastAppliedAt      DateTime?

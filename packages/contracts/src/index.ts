@@ -25,6 +25,9 @@ export const HookEvent = z.object({
   taskSubject: z.string().min(1).max(512).nullable().optional(),
   projectPath: z.string().max(4096).nullable().optional(),
   occurredAt: z.string().datetime().nullable().optional(),
+  contextTokens: z.number().int().nonnegative().max(10_000_000).nullable().optional(),
+  contextLimit: z.number().int().positive().max(10_000_000).nullable().optional(),
+  model: z.string().min(1).max(80).nullable().optional(),
   receivedAt: z.string().datetime(),
   dedupeKey: z.string().min(1).max(128),
 }).strict();
@@ -36,6 +39,7 @@ const nullableTime = z.string().datetime().nullable();
 export const OfficeAgentSchema = z.object({
   id: z.string(), runtimeAgentId: nullableText, name: z.string(), type: z.string(),
   status: AgentStatus, currentTool: nullableText, currentActivity: nullableText, mission: nullableText, lastSeenAt: nullableTime,
+  contextTokens: z.number().int().nullable(), contextLimit: z.number().int().nullable(), model: nullableText,
   identityConfidence: z.enum(['HIGH', 'MEDIUM', 'LOW']), parentAgentId: nullableText,
 });
 export type OfficeAgent = z.infer<typeof OfficeAgentSchema>;

@@ -62,6 +62,7 @@ export function normalizeHook(input, runtime, probe = false) {
     // Task titles can contain prompt text. Keep only the runtime task ID by default.
     taskSubject: null,
     projectPath: safeString(input.cwd, 4096), occurredAt,
+    contextTokens: null, contextLimit: null, model: null,
     receivedAt: new Date().toISOString(),
   };
   return probe ? { ...base, observedIdHash: hash } : { ...base, dedupeKey: hash };
