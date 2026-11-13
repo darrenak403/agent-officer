@@ -35,9 +35,21 @@ async function report(raw) {
     body: JSON.stringify(limits), signal: AbortSignal.timeout(1500) });
 }
 
+const hm = iso => iso ? new Date(iso).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false }) : '?';
+
+/** One status-line row when no other status-line command is chained: model, context and plan windows. */
+export function summary(raw) {
+  let p; try { p = JSON.parse(raw); } catch { return ''; }
+  const l = parseLimits(p);
+  const parts = [p?.model?.display_name].filter(Boolean);
+  if (l?.fiveHourPct != null) parts.push(`5h ${Math.round(l.fiveHourPct)}% · hồi ${hm(l.fiveHourResetsAt)}`);
+  if (l?.weekPct != null) parts.push(`tuần ${Math.round(l.weekPct)}%`);
+  return parts.join('  |  ');
+}
+
 function forward(raw) {
   const next = join(projectRoot, '.data', 'statusline-next.sh');
-  if (!existsSync(next)) return Promise.resolve();
+  if (!existsSync(next)) { process.stdout.write(summary(raw)); return Promise.resolve(); }
   return new Promise(resolve => {
     const child = spawn('/bin/sh', [next], { stdio: ['pipe', 'inherit', 'ignore'] });
     child.on('close', resolve); child.on('error', resolve);
