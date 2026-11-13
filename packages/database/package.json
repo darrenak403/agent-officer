@@ -1,0 +1,9 @@
+{
+  "name": "@office/database",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": { "generate": "prisma generate", "migrate": "prisma migrate dev" },
+  "dependencies": { "@prisma/client": "^6.19.0" },
+  "devDependencies": { "prisma": "^6.19.0" },
+  "prisma": { "schema": "prisma/schema.prisma" }
+}

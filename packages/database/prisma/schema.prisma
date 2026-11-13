@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String    @id @default(uuid()) @db.Uuid
+  rootPath  String    @unique
+  name      String
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Uuid
+  runtime          String
+  runtimeSessionId String
+  projectId        String?  @db.Uuid
+  project          Project? @relation(fields: [projectId], references: [id])
+  status           String   @default("ACTIVE")
+  startedAt        DateTime?
+  endedAt          DateTime?
+  lastEventAt      DateTime?
+  agents           Agent[]
+  tasks            Task[]
+  tools            ToolExecution[]
+  events           Event[]
+  createdAt        DateTime @default(now())
+
+  @@unique([runtime, runtimeSessionId])
+  @@index([runtime, status])
+}
+
+model Agent {
+  id                 String   @id @default(uuid()) @db.Uuid
+  sessionId          String   @db.Uuid
+  session            Session  @relation(fields: [sessionId], references: [id])
+  parentAgentId      String?  @db.Uuid
+  runtimeAgentId     String?
+  identityKey        String
+  name               String
+  type               String
+  status             String   @default("DISCOVERED")
+  currentTool        String?
+  identityConfidence String   @default("LOW")
+  lastSeenAt         DateTime?
+  lastAppliedAt      DateTime?
+  events             Event[]
+  tools              ToolExecution[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([sessionId, identityKey])
+  @@index([sessionId, status])
+}
+
+model Event {
+  id          String   @id @default(uuid()) @db.Uuid
+  sequence    BigInt   @unique @default(autoincrement())
+  runtime     String
+  dedupeKey   String
+  sourceHook  String
+  sessionId   String?  @db.Uuid
+  session     Session? @relation(fields: [sessionId], references: [id])
+  agentId     String?  @db.Uuid
+  agent       Agent?   @relation(fields: [agentId], references: [id])
+  toolName    String?
+  taskId      String?  @db.Uuid
+  task        Task?    @relation(fields: [taskId], references: [id])
+  occurredAt  DateTime?
+  receivedAt  DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([runtime, dedupeKey])
+  @@index([runtime, sequence])
+  @@index([sessionId, sequence])
+}
+
+model Task {
+  id            String   @id @default(uuid()) @db.Uuid
+  sessionId     String   @db.Uuid
+  session       Session  @relation(fields: [sessionId], references: [id])
+  runtimeTaskId String
+  subject       String?
+  status        String   @default("PENDING")
+  lastEventAt   DateTime?
+  events        Event[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([sessionId, runtimeTaskId])
+  @@index([sessionId, status])
+}
+
+model ToolExecution {
+  id          String    @id @default(uuid()) @db.Uuid
+  sessionId   String    @db.Uuid
+  session     Session   @relation(fields: [sessionId], references: [id])
+  agentId     String?   @db.Uuid
+  agent       Agent?    @relation(fields: [agentId], references: [id])
+  toolUseId   String
+  name        String
+  status      String    @default("RUNNING")
+  startedAt   DateTime?
+  endedAt     DateTime?
+  lastEventAt DateTime
+
+  @@unique([sessionId, toolUseId])
+  @@index([sessionId, status])
+}
