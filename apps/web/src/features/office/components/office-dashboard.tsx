@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { OfficeAgent, OfficeSnapshot, Runtime } from '@office/contracts';
 import { OfficeCanvas } from './office-canvas';
+import { ActiveAgents } from './active-agents';
+import { ContextBar } from './context-bar';
 import { useOfficeHistory, useOfficeLive } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
 import { agentNames, describeTool, hookLabel, sessionLabel } from '../labels';
@@ -17,7 +19,7 @@ const runtimeName = (runtime: Runtime) => runtime === 'codex' ? 'Codex' : 'Claud
 const DONE = ['STOPPED', 'UNKNOWN', 'FAILED', 'COMPLETED'];
 
 /** Ticks so stale evidence downgrades presence without waiting for a new event. */
-function useNow(initial: number, intervalMs = 15000) {
+function useNow(initial: number, intervalMs = 5000) {
   const [now, setNow] = useState(initial);
   useEffect(() => { setNow(Date.now()); const id = setInterval(() => setNow(Date.now()), intervalMs); return () => clearInterval(id); }, [intervalMs]);
   return now;
@@ -102,7 +104,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
           <button aria-pressed={runtime === 'claude_code'} onClick={() => chooseRuntime('claude_code')}>Claude Code</button>
           <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>
         </div>
-        <div className="toolbar-stats"><span><b>{working}</b> ĐANG LÀM</span><span><b>{waiting}</b> CHỜ DUYỆT</span><span><b>{resting}</b> ĐANG NGHỈ</span><span><b>{runningTools}</b> THAO TÁC ĐANG CHẠY</span></div>
+        <div className="toolbar-stats"><span data-s="WORKING"><b key={`w${working}`}>{working}</b> ĐANG LÀM</span><span data-s="WAITING"><b key={`a${waiting}`}>{waiting}</b> CHỜ DUYỆT</span><span><b key={`r${resting}`}>{resting}</b> ĐANG NGHỈ</span><span><b key={`t${runningTools}`}>{runningTools}</b> THAO TÁC ĐANG CHẠY</span></div>
       </div>
 
       <section className="workspace" id="office">
@@ -112,6 +114,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
             const label = sessionLabel(s);
             return <button key={s.id} className={`session ${activeSession?.id === s.id ? 'selected' : ''}`} onClick={() => { setSessionId(s.id); setSelectedId(null); }}>
               <strong>{label.title}</strong><small>{label.meta}</small>
+              {(() => { const main = s.agents.find(a => a.type === 'MAIN'); return main ? <ContextBar agent={main} compact /> : null; })()}
             </button>;
           }) : <p className="panel-empty">Chưa có phiên {runtime === 'codex' ? 'Codex nào. Mở /hooks trong Codex để duyệt Office hooks, rồi bắt đầu phiên mới.' : 'Claude Code nào được quan sát.'}</p>}
         </div>
@@ -133,10 +136,13 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
           </> : <div className="agent-list">
             {liveAgents.length ? liveAgents.map(a => <button key={a.id} className={selectedId === a.id ? 'selected' : ''} onClick={() => setSelectedId(a.id)}>
               <strong>{a.displayName} · {a.presence.label}</strong><span>{a.doing ?? a.mission ?? a.presence.detail}</span>
+              <ContextBar agent={a} compact />
             </button>) : <p className="panel-empty">Chưa có agent trong phiên này.</p>}
           </div>}
         </div>
 
+        <div className="side-stack">
+        <ActiveAgents agents={liveAgents} now={now} selectedId={selectedId} onSelect={setSelectedId} />
         <div className="panel inspector">
           <div className="panel-head"><h2>Chi tiết agent</h2><small>{selected ? (selected.type === 'MAIN' ? 'Agent chính' : 'Subagent') : 'Bấm vào một agent'}</small></div>
           {selected ? <dl>
@@ -146,7 +152,9 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
             <dt>Nhiệm vụ được giao</dt><dd>{selected.type === 'MAIN' ? 'Làm việc trực tiếp với bạn' : selected.mission ?? 'Không có mô tả'}</dd>
             <dt>Hoạt động gần nhất</dt><dd>{formatTime(selected.lastSeenAt)}</dd>
             <dt>Dự án</dt><dd>{activeSession?.projectName ?? 'Chưa rõ'}</dd>
+            <dt>Bộ nhớ ngữ cảnh</dt><dd><ContextBar agent={selected} /></dd>
           </dl> : <p className="panel-empty">Chọn một agent trên bản đồ để xem nó đang làm gì.</p>}
+        </div>
         </div>
       </section>
 

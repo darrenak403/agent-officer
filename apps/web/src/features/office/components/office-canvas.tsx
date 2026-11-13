@@ -243,12 +243,24 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
       app.stage.addChild(background(pixi, runtime));
       const layer = new pixi.Container();
       app.stage.addChild(layer);
-      const animated: Array<{ item: import('pixi.js').Container; baseY: number; status: string }> = [];
+      // gx/gy is where the agent stands on the floor now; x/y is where its zone wants it.
+      type Walker = { item: import('pixi.js').Container; x: number; y: number; gx: number; gy: number; status: string };
+      const animated: Walker[] = [];
+      // Where each agent last stood, so a state change walks it to its new zone instead of teleporting.
+      const placed = new Map<string, { x: number; y: number }>();
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-      app.ticker.add(() => {
-        if (reduced.matches) return;
-        const frame = Math.floor(performance.now() / 240);
-        for (const entry of animated) entry.item.y = entry.baseY + (entry.status === 'WORKING' && frame % 2 ? 2 : 0);
+      app.ticker.add(ticker => {
+        const now = performance.now();
+        const frame = Math.floor(now / 240);
+        const step = Math.min(1, 0.08 * ticker.deltaTime);
+        for (const e of animated) {
+          const walking = !reduced.matches && Math.hypot(e.x - e.gx, e.y - e.gy) > 1;
+          if (walking) { e.gx += (e.x - e.gx) * step; e.gy += (e.y - e.gy) * step; } else { e.gx = e.x; e.gy = e.y; }
+          // Footsteps while walking, a typing bob at the desk, a soft pulse while waiting for approval.
+          const bob = reduced.matches ? 0 : walking ? (frame % 2 ? -3 : 0) : e.status === 'WORKING' && frame % 2 ? 2 : 0;
+          e.item.x = e.gx; e.item.y = e.gy + bob;
+          e.item.alpha = !reduced.matches && e.status === 'WAITING' ? 0.65 + 0.35 * Math.abs(Math.sin(now / 420)) : 1;
+        }
       });
       const paint = (items: CanvasAgent[], selected: string | null) => {
         for (const child of layer.removeChildren()) child.destroy({ children: true });
@@ -266,10 +278,14 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
           const spot = spots[zone][used[zone]++];
           const atDesk = zone === 'desk';
           const item = drawAvatar(pixi, agent, agent.id === selected, id => latest.current.onSelect(id));
-          item.x = spot[0] + (atDesk ? 56 : 0);
-          item.y = spot[1] + (atDesk ? 87 : 0);
+          const x = spot[0] + (atDesk ? 56 : 0);
+          const y = spot[1] + (atDesk ? 87 : 0);
+          // Newcomers enter through the door on the right; known agents start where they stood.
+          const from = placed.get(agent.id) ?? { x: SIZE.width - 60, y: y };
+          item.x = from.x; item.y = from.y;
+          placed.set(agent.id, { x, y });
           layer.addChild(item);
-          animated.push({ item, baseY: item.y, status: agent.status });
+          animated.push({ item, x, y, gx: from.x, gy: from.y, status: agent.status });
         }
         const overflow: Array<[keyof typeof hidden, number, number]> = [['desk', 700, 600], ['lounge', 880, 470], ['exit', 1030, 600]];
         for (const [zone, x, y] of overflow) if (hidden[zone]) {

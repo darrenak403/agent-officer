@@ -62,3 +62,27 @@ export function sessionLabel(session: OfficeSession): { title: string; meta: str
   const people = session.agents.length === 1 ? '1 agent' : `${session.agents.length} agent`;
   return { title: session.projectName ?? 'Dự án chưa rõ', meta: `${state} · ${people} · từ ${formatTime(session.startedAt)}` };
 }
+
+/** "86k / 200k" style token counts. */
+export function formatTokens(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value % 1_000_000 ? 1 : 0)}M`;
+  if (value >= 1000) return `${Math.round(value / 1000)}k`;
+  return String(value);
+}
+
+/** Context-window fill of an agent, or null when the runtime has not reported it. */
+export function contextUsage(agent: Pick<OfficeAgent, 'contextTokens' | 'contextLimit'>) {
+  if (agent.contextTokens == null || !agent.contextLimit) return null;
+  const percent = Math.min(100, Math.round((agent.contextTokens / agent.contextLimit) * 100));
+  const level = percent >= 85 ? 'high' : percent >= 60 ? 'mid' : 'low';
+  return { percent, level, text: `${formatTokens(agent.contextTokens)} / ${formatTokens(agent.contextLimit)} token` } as const;
+}
+
+/** "3 phút" style elapsed time since an ISO timestamp. */
+export function elapsed(iso: string | null, now: number): string {
+  if (!iso) return '';
+  const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
+  if (s < 60) return `${s} giây`;
+  if (s < 3600) return `${Math.floor(s / 60)} phút`;
+  return `${Math.floor(s / 3600)} giờ ${Math.floor((s % 3600) / 60)} phút`;
+}
