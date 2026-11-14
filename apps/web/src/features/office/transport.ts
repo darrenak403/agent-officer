@@ -22,6 +22,14 @@ async function getJson(url: string, signal?: AbortSignal) {
   return response.json();
 }
 
+function socketSubscribe(runtime: Runtime, onChange: () => void, onConnection: (connected: boolean) => void) {
+  const socket = io(api, { reconnection: true });
+  socket.on('connect', () => { onConnection(true); socket.emit('subscribe', runtime); onChange(); });
+  socket.on('disconnect', () => onConnection(false));
+  socket.on('office.event', (event: { runtime?: Runtime }) => { if (event.runtime === runtime) onChange(); });
+  return () => { socket.disconnect(); };
+}
+
 export const httpTransport: OfficeTransport = {
   async snapshot(runtime, signal) {
     const parsed = OfficeSnapshotSchema.parse(await getJson(`${api}/api/office/snapshot?runtime=${runtime}`, signal));
@@ -33,12 +41,20 @@ export const httpTransport: OfficeTransport = {
     if (parsed.runtime !== runtime) throw new Error('Office history runtime mismatch');
     return parsed.events;
   },
+  // The Rust core streams changes over SSE; the older NestJS API only speaks socket.io.
   subscribe(runtime, onChange, onConnection) {
-    const socket = io(api, { reconnection: true });
-    socket.on('connect', () => { onConnection(true); socket.emit('subscribe', runtime); onChange(); });
-    socket.on('disconnect', () => onConnection(false));
-    socket.on('office.event', (event: { runtime?: Runtime }) => { if (event.runtime === runtime) onChange(); });
-    return () => { socket.disconnect(); onConnection(false); };
+    let stop = () => {};
+    const source = new EventSource(`${api}/api/office/stream?runtime=${runtime}`);
+    let opened = false;
+    source.onopen = () => { opened = true; onConnection(true); onChange(); };
+    source.addEventListener('office.event', () => onChange());
+    source.onerror = () => {
+      onConnection(false);
+      if (opened) return; // EventSource reconnects by itself once it has worked.
+      source.close();
+      stop = socketSubscribe(runtime, onChange, onConnection);
+    };
+    return () => { source.close(); stop(); onConnection(false); };
   },
 };
 

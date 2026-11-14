@@ -4,6 +4,7 @@
 pub mod db;
 pub mod event;
 pub mod ingest;
+pub mod server;
 pub mod snapshot;
 pub mod status;
 pub mod time;
