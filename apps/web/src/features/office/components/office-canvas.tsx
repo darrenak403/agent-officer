@@ -272,18 +272,27 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
       // Where each agent last stood, so a state change walks it to its new zone instead of teleporting.
       const placed = new Map<string, { x: number; y: number }>();
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-      app.ticker.add(ticker => {
+      // Keep the GPU quiet: 30fps while something moves, 4fps when the office is still, none while hidden.
+      const ticker = app.ticker;
+      ticker.maxFPS = 30;
+      const onVisibility = () => { if (document.hidden) ticker.stop(); else ticker.start(); };
+      document.addEventListener('visibilitychange', onVisibility);
+      onVisibility();
+      ticker.add(ticker => {
         const now = performance.now();
+        let busy = false;
         const frame = Math.floor(now / 240);
         const step = Math.min(1, 0.08 * ticker.deltaTime);
         for (const e of animated) {
           const walking = !reduced.matches && Math.hypot(e.x - e.gx, e.y - e.gy) > 1;
+          if (walking || e.status === 'WORKING' || e.status === 'WAITING') busy = true;
           if (walking) { e.gx += (e.x - e.gx) * step; e.gy += (e.y - e.gy) * step; } else { e.gx = e.x; e.gy = e.y; }
           // Footsteps while walking, a typing bob at the desk, a soft pulse while waiting for approval.
           const bob = reduced.matches ? 0 : walking ? (frame % 2 ? -3 : 0) : e.status === 'WORKING' && frame % 2 ? 2 : 0;
           e.item.x = e.gx; e.item.y = e.gy + bob;
           e.item.alpha = !reduced.matches && e.status === 'WAITING' ? 0.65 + 0.35 * Math.abs(Math.sin(now / 420)) : 1;
         }
+        ticker.maxFPS = busy && !reduced.matches ? 30 : 4;
       });
       const paint = (items: CanvasAgent[], selected: string | null) => {
         for (const child of layer.removeChildren()) child.destroy({ children: true });
@@ -324,7 +333,7 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
           layer.addChild(tag);
         }
       };
-      scene.current = { paint, destroy: () => app?.destroy(true) };
+      scene.current = { paint, destroy: () => { document.removeEventListener('visibilitychange', onVisibility); app?.destroy(true); } };
       paint(latest.current.agents, latest.current.selectedId);
     }
     void mount().catch(() => {});
