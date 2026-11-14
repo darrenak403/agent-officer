@@ -210,3 +210,5 @@ h2{margin:0;font-size:13px;font-weight:700}
 @media (max-width:1200px){.topbar{flex-wrap:wrap}.plan-limits{order:5;flex-basis:100%;margin-left:0}.usage{flex:1}.vn-clock{display:flex;margin-left:auto}.vn-clock small{display:block}}
 
 .brand-mark{width:28px;height:28px;background:none;box-shadow:none;object-fit:contain}
+
+.usage .account-plan{padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;white-space:nowrap}

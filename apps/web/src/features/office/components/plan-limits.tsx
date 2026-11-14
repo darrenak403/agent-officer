@@ -46,9 +46,7 @@ export function PlanLimits({ limits, info }: { limits: OfficeSnapshot['limits'];
   return (
     <div className="plan-limits">
       <div className="usage">
-      {acct && <span className="account" title={[acct.name, acct.email, acct.organization].filter(Boolean).join(' · ')}>
-        <span className="account-email">{acct.email ?? acct.name ?? 'Đã đăng nhập'}</span>{acct.plan && <b className="account-plan">{acct.plan}</b>}
-      </span>}
+      {acct && <b className="account-plan" title="Gói đang dùng của tài khoản đăng nhập trên máy">{acct.plan ?? 'Đã đăng nhập'}</b>}
       {info && !acct && <span className="limit-empty">Chưa đăng nhập</span>}
       {real && <>
         <Limit name="5 giờ" pct={real.fiveHourPct} resetsAt={real.fiveHourResetsAt} now={now} />
