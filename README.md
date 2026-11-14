@@ -51,4 +51,6 @@ cd apps/desktop && npx @tauri-apps/cli@2 dev
 
 **Release:** push a tag like `v0.2.0`. GitHub Actions builds the app, signs the update bundle and publishes it with `latest.json` as a Release of this repo, where installed apps find it. It needs one secret, `TAURI_SIGNING_PRIVATE_KEY` (the updater key). Downloads and updates work only while the repo is public.
 
+Without Actions, release from this Mac: `scripts/release-local.sh 0.3.0` builds and signs the app, commits the version, tags, pushes and publishes the Release with `latest.json`. `DRY_RUN=1` builds and signs only. It needs `gh` logged in and the updater key at `~/.tauri/agent-office-updater.key`.
+
 Layout: `apps/core` (Rust server, SQLite, hook collector, installer), `apps/desktop` (Tauri shell), `apps/web` (UI), `packages/contracts` (shared schemas). More in the [product specification](./Visual_Multi_Agent_Office_Specification.md), [dual-runtime architecture](./docs/DUAL_RUNTIME_ARCHITECTURE.md) and [interface design](./docs/INTERFACE_DESIGN.md).
