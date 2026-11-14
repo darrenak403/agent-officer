@@ -168,7 +168,6 @@ h2{margin:0;font-size:13px;font-weight:700}
 .account{display:grid;justify-items:end;line-height:1.3}
 .account-email{color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account-plan{font-size:11px;font-weight:600;color:var(--accent)}
-.limit-estimate{grid-template-columns:auto auto}
 
 /* Layout refresh: one-line header, grouped usage card, quieter chrome around the map */
 .topbar{gap:12px;padding:10px 24px;min-height:64px}
@@ -198,3 +197,13 @@ h2{margin:0;font-size:13px;font-weight:700}
 @media (max-width:1400px){.vn-clock small,.limit-reset{display:none}.account-email{max-width:150px}}
 @media (max-width:1100px){.usage{flex-wrap:wrap}.limit-reset{display:block}}
 .switch button,.view-switch button,.limit b,.limit-name{white-space:nowrap}
+
+/* Header must always fit the window: shrink, then hide secondary text, then wrap */
+.topbar{min-width:0}
+.session-picker{min-width:180px}
+.plan-limits{flex:0 1 auto;min-width:0}
+.usage{min-width:0}
+.account{min-width:0}.account-email{max-width:180px}
+@media (max-width:1600px){.health{font-size:0;gap:0;padding:8px}.health::before{margin:0}}
+@media (max-width:1400px){.vn-clock{display:none}.account-email{max-width:130px}}
+@media (max-width:1200px){.topbar{flex-wrap:wrap}.plan-limits{order:5;flex-basis:100%;margin-left:0}.usage{flex:1}.vn-clock{display:flex;margin-left:auto}.vn-clock small{display:block}}

@@ -109,7 +109,7 @@ function Office() {
       </div>
       <SessionPicker sessions={sessions} activeId={activeSession?.id ?? null} onChange={id => { setSessionId(id); setSelectedId(null); }} />
       <PlanLimits limits={snapshot.limits ?? null} info={accounts.data} />
-      <span className={`health ${health.cls}`}>{health.text}</span>
+      <span className={`health ${health.cls}`} title={health.text} role="status">{health.text}</span>
     </header>
 
     <div className="stage">

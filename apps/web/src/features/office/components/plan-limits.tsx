@@ -54,11 +54,16 @@ export function PlanLimits({ limits, info }: { limits: OfficeSnapshot['limits'];
         <Limit name="5 giờ" pct={real.fiveHourPct} resetsAt={real.fiveHourResetsAt} now={now} />
         <Limit name="Tuần" pct={real.weekPct} resetsAt={real.weekResetsAt} now={now} withDay />
       </>}
-      {!real && est && <div className="limit limit-estimate" title={`Ước tính từ transcript trên máy (${est.replies} lượt trả lời, không tính ${compact.format(est.cacheRead)} token đọc cache). % hạn mức thật chỉ có khi chạy claude trong terminal.`}>
-        <span className="limit-name">5 giờ</span>
-        <b>{compact.format(est.tokens)} token</b>
-        <span className="limit-reset">{estReset ? `${left(estReset - now)} · hồi ${at.format(estReset)}` : 'chưa dùng trong cửa sổ này'}</span>
-      </div>}
+      {!real && est && (() => {
+        // No real % without the CLI status line: the bar shows how much of the 5-hour window has passed.
+        const pct = estReset ? Math.min(100, Math.max(0, 100 - (estReset - now) / 180000)) : 0;
+        return <div className="limit limit-low limit-estimate" title={`Ước tính từ transcript trên máy (${est.replies} lượt trả lời, không tính ${compact.format(est.cacheRead)} token đọc cache). Thanh là thời gian đã qua của cửa sổ 5 giờ; % hạn mức thật chỉ có khi chạy claude trong terminal.`}>
+          <span className="limit-name">5 giờ</span>
+          <span className="limit-bar"><i style={{ width: `${pct}%` }} /></span>
+          <b>{compact.format(est.tokens)} tok</b>
+          <span className="limit-reset">{estReset ? `${left(estReset - now)} · hồi ${at.format(estReset)}` : 'chưa dùng trong cửa sổ này'}</span>
+        </div>;
+      })()}
       </div>
       <time className="vn-clock" dateTime={new Date(now).toISOString()}>{clock.format(now)}<small>{day.format(now)} · GMT+7</small></time>
     </div>
