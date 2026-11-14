@@ -45,6 +45,7 @@ export function PlanLimits({ limits, info }: { limits: OfficeSnapshot['limits'];
   const estReset = est?.resetsAt ? Date.parse(est.resetsAt) : null;
   return (
     <div className="plan-limits">
+      <div className="usage">
       {acct && <span className="account" title={[acct.name, acct.email, acct.organization].filter(Boolean).join(' · ')}>
         <span className="account-email">{acct.email ?? acct.name ?? 'Đã đăng nhập'}</span>{acct.plan && <b className="account-plan">{acct.plan}</b>}
       </span>}
@@ -58,6 +59,7 @@ export function PlanLimits({ limits, info }: { limits: OfficeSnapshot['limits'];
         <b>{compact.format(est.tokens)} token</b>
         <span className="limit-reset">{estReset ? `${left(estReset - now)} · hồi ${at.format(estReset)}` : 'chưa dùng trong cửa sổ này'}</span>
       </div>}
+      </div>
       <time className="vn-clock" dateTime={new Date(now).toISOString()}>{clock.format(now)}<small>{day.format(now)} · GMT+7</small></time>
     </div>
   );

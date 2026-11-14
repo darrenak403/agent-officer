@@ -134,7 +134,11 @@ function Office() {
             <ContextBar agent={a} compact />
           </button>) : <p className="empty">Chưa có agent trong phiên này.</p>}
         </div>}
-        <p className="legend">Bàn làm việc: đang làm · Khu nghỉ: vừa xong việc (15 phút) · Cửa ra: đã rời lâu hơn hoặc mất tín hiệu</p>
+        <ul className="legend" aria-label="Chú thích bản đồ">
+          <li data-s="WORKING"><b>Bàn làm việc</b> đang làm</li>
+          <li data-s="IDLE"><b>Khu nghỉ</b> vừa xong việc (15 phút)</li>
+          <li data-s="STOPPED"><b>Cửa ra</b> đã rời hoặc mất tín hiệu</li>
+        </ul>
       </section>
 
       <aside className="drawer">
