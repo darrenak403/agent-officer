@@ -145,6 +145,12 @@ struct AgentRow { id: String, status: String, kind: String, name: String, missio
 
 fn apply_agent(tx: &rusqlite::Transaction, a: &AgentRow, e: &HookEvent, session_id: &str, seen: &str) -> rusqlite::Result<()> {
     let hook = e.source_hook.as_str();
+    // A turn boundary means nothing is still running: calls blocked by a hook or
+    // interrupted by the user never get a PostToolUse, so close them here.
+    if matches!(hook, "Stop" | "StopFailure" | "SubagentStop" | "SessionEnd" | "UserPromptSubmit") {
+        tx.execute("UPDATE tool_execution SET status='INTERRUPTED', ended_at=?2 WHERE agent_id=?1 AND status='RUNNING'",
+            params![a.id, seen])?;
+    }
     let active_tool: Option<String> = tx.query_row(
         "SELECT name FROM tool_execution WHERE agent_id=?1 AND status='RUNNING' ORDER BY started_at DESC LIMIT 1",
         [&a.id], |r| r.get(0)).optional()?;

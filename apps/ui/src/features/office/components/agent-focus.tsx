@@ -58,7 +58,7 @@ export function AgentFocus({ agent, tools, now }: { agent: LiveAgent; tools: Too
       <h3>Các bước gần đây</h3>
       <ol>{own.slice(0, 6).map(t => <li key={t.id} data-state={!t.endedAt ? 'run' : t.status === 'FAILED' ? 'fail' : 'ok'}>
         <span className="step-text">{describeTool(t.name, t.activity)}</span>
-        <span className="step-meta">{!t.endedAt ? 'đang chạy' : t.status === 'FAILED' ? 'lỗi' : 'xong'}{t.startedAt ? ` · ${span(seconds(t.startedAt, t.endedAt, now))}` : ''}</span>
+        <span className="step-meta">{!t.endedAt ? 'đang chạy' : t.status === 'FAILED' ? 'lỗi' : t.status === 'INTERRUPTED' ? 'bị dừng' : 'xong'}{t.startedAt ? ` · ${span(seconds(t.startedAt, t.endedAt, now))}` : ''}</span>
       </li>)}</ol>
     </div>}
 

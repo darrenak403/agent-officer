@@ -87,3 +87,16 @@ fn rejects_bad_envelopes_and_saves_limits() {
     assert_eq!(s["limits"]["fiveHourResetsAt"], "2026-11-13T22:30:00.000Z");
     assert_eq!(events(&c, "claude_code", None, None).unwrap()["events"].as_array().unwrap().len(), 0);
 }
+
+#[test]
+fn stop_closes_tools_that_never_got_a_post_event() {
+    let mut c = db::open_memory().unwrap();
+    ingest(&mut c, &ev(1, "UserPromptSubmit", json!({}))).unwrap();
+    // A hook blocked this call, so the runtime never sends PostToolUse for it.
+    ingest(&mut c, &ev(2, "PreToolUse", json!({ "toolName": "Bash", "toolUseId": "blocked" }))).unwrap();
+    ingest(&mut c, &ev(3, "Stop", json!({}))).unwrap();
+    let s = snapshot(&c, "claude_code").unwrap();
+    assert_eq!(main_agent(&s)["status"], "IDLE");
+    assert_eq!(main_agent(&s)["currentTool"], Value::Null);
+    assert_eq!(s["tools"][0]["status"], "INTERRUPTED");
+}
