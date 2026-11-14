@@ -254,6 +254,8 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
     let app: import('pixi.js').Application | undefined;
     async function mount() {
       const pixi = await import('pixi.js');
+      // The desktop app's CSP forbids eval; this build of Pixi's shader setup works without it.
+      await import('pixi.js/unsafe-eval');
       if (disposed || !holder.current) return;
       app = new pixi.Application();
       await app.init({ width: SIZE.width, height: SIZE.height, background: COLOR.wallEdge, antialias: false, resolution: Math.min(window.devicePixelRatio, 2) });
@@ -336,7 +338,7 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
       scene.current = { paint, destroy: () => { document.removeEventListener('visibilitychange', onVisibility); app?.destroy(true); } };
       paint(latest.current.agents, latest.current.selectedId);
     }
-    void mount().catch(() => {});
+    void mount().catch(error => console.error('office canvas failed', error));
     return () => {
       disposed = true;
       scene.current?.destroy();
