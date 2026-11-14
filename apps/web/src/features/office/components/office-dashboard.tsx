@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { OfficeAgent, OfficeSnapshot, Runtime } from '@office/contracts';
+import { Runtime as RuntimeSchema, type OfficeAgent, type Runtime } from '@office/contracts';
 import { OfficeCanvas } from './office-canvas';
 import { TeamList } from './team-list';
 import { ActivityFeed } from './activity-feed';
@@ -13,7 +13,6 @@ import { useOfficeHistory, useOfficeLive } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
 import { agentNames, describeTool, sessionLabel } from '../labels';
 
-type Props = { initialRuntime: Runtime; initialSnapshot: OfficeSnapshot; initialAvailable: boolean; renderedAt: number };
 /** An agent as the office shows it: readable name, presence and what it is doing. */
 export type LiveAgent = OfficeAgent & { presence: Presence; displayName: string; doing: string | null };
 
@@ -21,8 +20,8 @@ const runtimeName = (runtime: Runtime) => runtime === 'codex' ? 'Codex' : 'Claud
 const DONE = ['STOPPED', 'UNKNOWN', 'FAILED', 'COMPLETED'];
 
 /** Ticks so stale evidence downgrades presence without waiting for a new event. */
-function useNow(initial: number, intervalMs = 5000) {
-  const [now, setNow] = useState(initial);
+function useNow(intervalMs = 5000) {
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => { setNow(Date.now()); const id = setInterval(() => setNow(Date.now()), intervalMs); return () => clearInterval(id); }, [intervalMs]);
   return now;
 }
@@ -34,8 +33,15 @@ function doingText(agent: OfficeAgent, presence: Presence): string | null {
   return null;
 }
 
-function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt }: Props) {
-  const [runtime, setRuntime] = useState<Runtime>(initialRuntime);
+/** Runtime chosen in the URL (?runtime=codex), read after mount since the page is prerendered. */
+function urlRuntime(): Runtime {
+  const parsed = RuntimeSchema.safeParse(new URLSearchParams(window.location.search).get('runtime'));
+  return parsed.success ? parsed.data : 'claude_code';
+}
+
+function Office() {
+  const [runtime, setRuntime] = useState<Runtime>('claude_code');
+  useEffect(() => { setRuntime(urlRuntime()); }, []);
   const [selectedId, setSelectedIdRaw] = useState<string | null>(null);
   // Picking an agent on the map also brings its explanation into view in the drawer.
   const setSelectedId = (id: string | null) => {
@@ -44,8 +50,8 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
   };
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [view, setView] = useState<'office' | 'list'>('office');
-  const { snapshot, available, socketConnected } = useOfficeLive(runtime, initialRuntime, initialSnapshot, initialAvailable);
-  const now = useNow(renderedAt);
+  const { snapshot, available, socketConnected } = useOfficeLive(runtime);
+  const now = useNow();
 
   const sessions = snapshot.sessions;
   const activeSession = sessions.find(s => s.id === sessionId) ?? sessions[0];
@@ -136,7 +142,7 @@ function Office({ initialRuntime, initialSnapshot, initialAvailable, renderedAt 
   </div>;
 }
 
-export function OfficeDashboard(props: Props) {
+export function OfficeDashboard() {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true } } }));
-  return <QueryClientProvider client={client}><Office {...props} /></QueryClientProvider>;
+  return <QueryClientProvider client={client}><Office /></QueryClientProvider>;
 }
