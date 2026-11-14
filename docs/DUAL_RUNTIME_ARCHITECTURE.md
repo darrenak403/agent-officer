@@ -15,7 +15,7 @@ Codex hooks / read APIs ──> Codex adapter ┘                               
                                                                                    └──> runtime-filtered UI
 ```
 
-The implementation is one desktop app (Tauri). Its Rust core (`apps/core`) runs the HTTP server on `127.0.0.1:4100` with SQLite in WAL mode, streams changes over server-sent events, and is also the hook collector: Claude Code and Codex call the app binary with `hook --runtime <name>`. Failed deliveries are spooled and replayed when the server starts. The UI is the Next.js page exported as static files, drawn with PixiJS. This replaced the earlier NestJS, PostgreSQL, Prisma and Socket.IO stack run in Docker.
+The implementation is one desktop app (Tauri). Its Rust core (`apps/core`) runs the HTTP server on `127.0.0.1:4100` with SQLite in WAL mode, streams changes over server-sent events, and is also the hook collector: Claude Code and Codex call the app binary with `hook --runtime <name>`. Failed deliveries are spooled and replayed when the server starts. The UI (`apps/ui`) is a React page built with Vite into static files, drawn with PixiJS. This replaced the earlier NestJS, PostgreSQL, Prisma and Socket.IO stack run in Docker.
 
 ## Identity and isolation
 

@@ -22,7 +22,7 @@ jobs:
         with: { workspaces: apps/desktop/src-tauri }
       - run: pnpm install --frozen-lockfile
       - name: Static UI
-        run: pnpm --filter @office/contracts build && STATIC_EXPORT=1 pnpm --filter @office/web build
+        run: pnpm desktop:ui
       - name: Version from tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: |

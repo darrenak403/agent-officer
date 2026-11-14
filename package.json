@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "packageManager": "pnpm@12.18.0",
   "scripts": {
-    "dev": "pnpm --filter @office/web dev",
-    "desktop:ui": "pnpm --filter @office/contracts build && STATIC_EXPORT=1 pnpm --filter @office/web build",
+    "dev": "cd apps/desktop/src-tauri && npx -y @tauri-apps/cli@2 dev",
+    "desktop:ui": "pnpm --filter @office/ui build",
     "test": "cargo test --manifest-path apps/core/Cargo.toml && pnpm desktop:ui"
   }
 }

@@ -1,4 +1,3 @@
-'use client';
 
 import { OfficeAccountsSchema, type OfficeAccounts, OfficeEventsResponseSchema, OfficeSnapshotSchema, type OfficeEventsResponse, type OfficeSnapshot, type Runtime } from '@office/contracts';
 
@@ -14,7 +13,7 @@ export type OfficeTransport = {
   subscribe(runtime: Runtime, onChange: () => void, onConnection: (connected: boolean) => void): () => void;
 };
 
-const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:4100';
+const api = 'http://127.0.0.1:4100';
 
 async function getJson(url: string, signal?: AbortSignal) {
   const response = await fetch(url, { cache: 'no-store', signal });

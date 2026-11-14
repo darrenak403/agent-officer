@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import type { LiveAgent } from './office-dashboard';

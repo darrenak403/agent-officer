@@ -16,7 +16,8 @@ use tokio::sync::broadcast;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use tower_http::cors::CorsLayer;
 
-const UI_ORIGINS: [&str; 3] = ["http://127.0.0.1:3000", "http://localhost:3000", "tauri://localhost"];
+// The app window, plus the Vite dev server used by `tauri dev`.
+const UI_ORIGINS: [&str; 2] = ["tauri://localhost", "http://127.0.0.1:5173"];
 
 #[derive(Clone)]
 struct AppState { db: Arc<Mutex<Connection>>, token: Arc<String>, changes: broadcast::Sender<(String, i64)> }

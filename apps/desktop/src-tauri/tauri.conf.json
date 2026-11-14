@@ -4,7 +4,9 @@
   "version": "0.2.3",
   "identifier": "dev.agentoffice.app",
   "build": {
-    "frontendDist": "../../web/out"
+    "frontendDist": "../../ui/out",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeDevCommand": "pnpm --filter @office/ui dev"
   },
   "app": {
     "windows": [

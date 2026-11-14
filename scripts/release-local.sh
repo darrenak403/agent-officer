@@ -24,7 +24,7 @@ trap 'rm -rf "$STAGE"' EXIT
 [[ -f "$KEY" ]] || { echo "missing updater key: $KEY" >&2; exit 2; }
 cd "$ROOT"
 if [[ -z "${DRY_RUN:-}" ]]; then
-  [[ -z "$(git status --porcelain --untracked-files=no -- . ':!apps/web/tsconfig.tsbuildinfo')" ]] || { echo "commit or stash your changes first" >&2; exit 2; }
+  [[ -z "$(git status --porcelain --untracked-files=no -- .)" ]] || { echo "commit or stash your changes first" >&2; exit 2; }
   ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "tag $TAG already exists" >&2; exit 2; }
 fi
 

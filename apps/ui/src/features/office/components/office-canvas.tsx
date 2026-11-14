@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useRef } from 'react';
 import type { OfficeAgent, Runtime } from '@office/contracts';

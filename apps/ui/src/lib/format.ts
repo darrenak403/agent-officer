@@ -1,6 +1,6 @@
 // Hand-rolled (no Intl) so Node's ICU in the container and the browser produce identical
 // text during hydration. Office is local to Vietnam: fixed UTC+7, no DST.
-const OFFSET_MS = Number(process.env.NEXT_PUBLIC_UTC_OFFSET_HOURS ?? 7) * 3_600_000;
+const OFFSET_MS = Number(7) * 3_600_000;
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function formatTime(value: string | null): string {
