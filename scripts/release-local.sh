@@ -5,6 +5,10 @@
 # Needs: gh (logged in), Rust, pnpm, and the updater key at ~/.tauri/agent-office-updater.key.
 set -euo pipefail
 
+# rustup installs cargo here; non-login shells often miss it.
+[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
+command -v cargo >/dev/null || { echo "cargo not found; install Rust from https://rustup.rs" >&2; exit 2; }
+
 VERSION="${1:?usage: scripts/release-local.sh <version, e.g. 0.3.0>}"
 VERSION="${VERSION#v}"
 TAG="v$VERSION"
