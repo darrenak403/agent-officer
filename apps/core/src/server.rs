@@ -116,5 +116,8 @@ pub async fn serve(data_dir: PathBuf, port: u16, shutdown: impl std::future::Fut
         .with_state(state);
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port)).await?;
     println!("office-core listening on 127.0.0.1:{port}");
+    // Events the hooks spooled while the office was closed.
+    let (dir, token) = (data_dir.clone(), load_token(&data_dir));
+    tokio::task::spawn_blocking(move || crate::collector::deliver::replay(&dir, &token));
     axum::serve(listener, app).with_graceful_shutdown(shutdown).await
 }

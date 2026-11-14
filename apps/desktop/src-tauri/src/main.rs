@@ -3,8 +3,6 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::path::PathBuf;
-
 use tauri::{
     menu::{Menu, MenuItem}, tray::{MouseButton, TrayIconBuilder, TrayIconEvent}, Manager, WindowEvent,
 };
@@ -15,19 +13,17 @@ fn show_main(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") { let _ = w.show(); let _ = w.unminimize(); let _ = w.set_focus(); }
 }
 
-fn data_dir(app: &tauri::AppHandle) -> PathBuf {
-    std::env::var("OFFICE_DATA_DIR").map(PathBuf::from)
-        .unwrap_or_else(|_| app.path().app_data_dir().expect("app data dir"))
-}
-
 fn main() {
+    // Runtimes call the same binary for hooks and the status line; those exit without a window.
+    let args: Vec<String> = std::env::args().collect();
+    if office_core::run_cli(&args) { return; }
     tauri::Builder::default()
         .setup(|app| {
             // Menu-bar app: no Dock icon on macOS.
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            let dir = data_dir(app.handle());
+            let dir = office_core::default_data_dir();
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = office_core::server::serve(dir, PORT, std::future::pending()).await {
                     eprintln!("agent-office: server stopped: {e} (is port {PORT} already in use?)");
