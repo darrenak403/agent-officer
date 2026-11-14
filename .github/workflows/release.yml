@@ -1,5 +1,5 @@
-# Push a tag like v0.2.0: builds the macOS app, signs the update bundle and publishes it to the
-# public releases repo, where installed apps find latest.json and offer the update.
+# Push a tag like v0.2.0: builds the macOS app, signs the update bundle and publishes it as a
+# Release of this repo, where installed apps find latest.json and offer the update.
 name: release
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   macos:
@@ -30,13 +30,11 @@ jobs:
           jq --arg v "$v" '.version = $v' apps/desktop/src-tauri/tauri.conf.json > c.json && mv c.json apps/desktop/src-tauri/tauri.conf.json
       - uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         with:
           projectPath: apps/desktop
-          owner: darrenak403
-          repo: agent-office-releases
           tagName: ${{ github.ref_name }}
           releaseName: Agent Office ${{ github.ref_name }}
           releaseBody: Tải file .dmg bên dưới. Bản đã cài sẽ tự hỏi cập nhật.

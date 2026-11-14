@@ -6,7 +6,7 @@ It is one small menu-bar app (about 10 MB, near 0% CPU when idle). There is no D
 
 ## Install
 
-1. Download the latest `.dmg` from [Releases](https://github.com/darrenak403/agent-office-releases/releases/latest) (macOS, Apple silicon) and drag **Agent Office** to Applications.
+1. Download the latest `.dmg` from [Releases](https://github.com/darrenak403/agent-officer/releases/latest) (macOS, Apple silicon) and drag **Agent Office** to Applications.
 2. The app is not signed with an Apple Developer ID yet, so macOS blocks the first launch. Run this once, then open it:
 
    ```sh
@@ -49,6 +49,6 @@ cd apps/desktop && npx @tauri-apps/cli@2 dev
 
 `pnpm dev` serves the UI on `http://127.0.0.1:3000` against a running app. The core also runs alone: `cargo run --manifest-path apps/core/Cargo.toml` (`OFFICE_DATA_DIR`, `PORT`), and `office-core install-hooks` / `uninstall-hooks` work without the UI.
 
-**Release:** push a tag like `v0.2.0`. GitHub Actions builds the app, signs the update bundle and publishes it with `latest.json` to the public `agent-office-releases` repo, where installed apps find it. It needs the secrets `TAURI_SIGNING_PRIVATE_KEY` (the updater key) and `RELEASES_TOKEN` (a token that can write releases to that repo).
+**Release:** push a tag like `v0.2.0`. GitHub Actions builds the app, signs the update bundle and publishes it with `latest.json` as a Release of this repo, where installed apps find it. It needs one secret, `TAURI_SIGNING_PRIVATE_KEY` (the updater key). Downloads and updates work only while the repo is public.
 
 Layout: `apps/core` (Rust server, SQLite, hook collector, installer), `apps/desktop` (Tauri shell), `apps/web` (UI), `packages/contracts` (shared schemas). More in the [product specification](./Visual_Multi_Agent_Office_Specification.md), [dual-runtime architecture](./docs/DUAL_RUNTIME_ARCHITECTURE.md) and [interface design](./docs/INTERFACE_DESIGN.md).
