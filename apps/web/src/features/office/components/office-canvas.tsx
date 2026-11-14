@@ -10,10 +10,10 @@ type Scene = { paint: (agents: CanvasAgent[], selectedId: string | null) => void
 
 const SIZE = { width: 1120, height: 650 };
 const COLOR = {
-  wall: '#273349', wallTop: '#35445b', wallEdge: '#172133', floor: '#394559', floorAlt: '#3d4a5f',
-  line: '#2a374b', cream: '#e9e4d5', muted: '#a9b4bd', amber: '#edaa63', teal: '#6ccbb8',
-  wood: '#9b674f', woodLight: '#c08a65', woodDark: '#593b3b', rug: '#57637e',
-  screen: '#182638', screenLit: '#78a9cb', leaf: '#487c70', pot: '#b17b60',
+  wall: '#3b352c', wallTop: '#4a443a', wallEdge: '#27231d', floor: '#4a443d', floorAlt: '#4f4941',
+  line: '#3d372f', cream: '#e9e4d5', muted: '#aaa69f', amber: '#f7c325', teal: '#a1937d',
+  wood: '#9b674f', woodLight: '#c08a65', woodDark: '#593b3b', rug: '#6a645a',
+  screen: '#2b261f', screenLit: '#a59884', leaf: '#655c4f', pot: '#b17b60',
 };
 const SHIRTS = ['#d8816a', '#6ab6a6', '#8b9bc9', '#c5a66d', '#b590ba', '#81adc7'];
 const HAIR = ['#332c38', '#684633', '#b99a72', '#262b3b', '#8c5a50', '#4b3948'];
@@ -62,26 +62,26 @@ function plant(g: import('pixi.js').Graphics, x: number, y: number) {
   rect(g, x + 12, y + 7, 7, 15, COLOR.leaf);
   rect(g, x + 1, y + 7, 13, 7, '#5c9481');
   rect(g, x + 18, y + 2, 13, 8, '#5c9481');
-  rect(g, x + 5, y, 10, 8, '#3f6c61');
+  rect(g, x + 5, y, 10, 8, '#585145');
 }
 
 function workstation(g: import('pixi.js').Graphics, x: number, y: number, index: number) {
-  rect(g, x - 9, y - 14, 162, 128, '#344157');
-  rect(g, x - 4, y - 10, 152, 118, index % 2 ? '#40506a' : '#45536b');
+  rect(g, x - 9, y - 14, 162, 128, '#474139');
+  rect(g, x - 4, y - 10, 152, 118, index % 2 ? '#575046' : '#595349');
   rect(g, x + 3, y + 22, 138, 69, COLOR.woodDark);
   rect(g, x + 3, y + 17, 138, 64, COLOR.wood);
   rect(g, x + 8, y + 21, 128, 7, COLOR.woodLight);
-  rect(g, x + 48, y - 5, 46, 36, '#121c2d');
+  rect(g, x + 48, y - 5, 46, 36, '#221e18');
   rect(g, x + 52, y - 1, 38, 27, COLOR.screen);
-  rect(g, x + 56, y + 3, 30, 4, '#7295a4');
-  rect(g, x + 56, y + 11, 20, 3, '#486b82');
-  rect(g, x + 65, y + 31, 12, 8, '#182133');
+  rect(g, x + 56, y + 3, 30, 4, '#8c8274');
+  rect(g, x + 56, y + 11, 20, 3, '#695f51');
+  rect(g, x + 65, y + 31, 12, 8, '#28241d');
   rect(g, x + 43, y + 44, 57, 10, '#d1c5ae');
-  rect(g, x + 49, y + 47, 45, 4, '#778697');
+  rect(g, x + 49, y + 47, 45, 4, '#847e75');
   rect(g, x + 118, y + 34, 10, 12, '#d9c7a9');
   rect(g, x + 119, y + 32, 8, 3, COLOR.cream);
-  rect(g, x + 56, y + 93, 50, 13, '#26344a');
-  rect(g, x + 62, y + 106, 38, 13, '#293749');
+  rect(g, x + 56, y + 93, 50, 13, '#3b352c');
+  rect(g, x + 62, y + 106, 38, 13, '#3b362e');
 }
 
 function background(pixi: Pixi, runtime: Runtime) {
@@ -96,50 +96,50 @@ function background(pixi: Pixi, runtime: Runtime) {
   rect(g, 10, 10, 1100, 13, COLOR.wallTop);
   rect(g, 10, 135, 1100, 8, COLOR.wallEdge);
   rect(g, 837, 143, 8, 497, COLOR.wallEdge);
-  rect(g, 844, 143, 266, 497, '#354359');
+  rect(g, 844, 143, 266, 497, '#49433a');
   for (let row = 0; row < 10; row++) for (let col = 0; col < 5; col++) {
-    rect(g, 846 + col * 53, 145 + row * 49, 52, 48, (row + col) % 2 ? '#37475d' : '#3b4b62');
+    rect(g, 846 + col * 53, 145 + row * 49, 52, 48, (row + col) % 2 ? '#4c463c' : '#504a40');
   }
   rect(g, 843, 142, 267, 7, COLOR.wallEdge);
   rect(g, 844, 488, 266, 8, COLOR.wallEdge);
 
   // Windows and evening skyline make the room read as a place, not a chart.
   for (const x of [273, 489, 705]) {
-    rect(g, x, 32, 170, 85, '#131e31');
-    rect(g, x + 6, 38, 158, 73, '#314562');
-    rect(g, x + 8, 73, 158, 38, '#24364f');
+    rect(g, x, 32, 170, 85, '#24201a');
+    rect(g, x + 6, 38, 158, 73, '#4e4639');
+    rect(g, x + 8, 73, 158, 38, '#3d372d');
     for (let i = 0; i < 7; i++) {
       const height = 13 + ((i * 17 + x) % 24);
-      rect(g, x + 10 + i * 22, 111 - height, 17, height, '#1c2b43');
-      if (i % 2) rect(g, x + 15 + i * 22, 101 - height, 3, 3, '#e3ae75');
+      rect(g, x + 10 + i * 22, 111 - height, 17, height, '#332d25');
+      if (i % 2) rect(g, x + 15 + i * 22, 101 - height, 3, 3, '#f7c325');
     }
-    rect(g, x + 82, 38, 5, 73, '#182439');
-    rect(g, x + 6, 109, 158, 5, '#6d7d8c');
+    rect(g, x + 82, 38, 5, 73, '#2b261f');
+    rect(g, x + 6, 109, 158, 5, '#79746c');
   }
-  rect(g, 37, 35, 210, 70, '#16243a');
-  rect(g, 43, 41, 198, 58, '#24364d');
+  rect(g, 37, 35, 210, 70, '#2b261f');
+  rect(g, 43, 41, 198, 58, '#3c362c');
   rect(g, 43, 41, 6, 58, runtime === 'codex' ? COLOR.teal : COLOR.amber);
 
   for (let i = 0; i < deskSpots.length; i++) workstation(g, deskSpots[i][0], deskSpots[i][1], i);
 
   // Break area: sofa, low table, notice board, plants.
   rect(g, 874, 215, 204, 245, COLOR.rug);
-  rect(g, 886, 238, 175, 37, '#233750');
-  rect(g, 886, 269, 175, 43, '#64788e');
-  rect(g, 887, 273, 85, 33, '#7691a2');
-  rect(g, 977, 273, 83, 33, '#7691a2');
+  rect(g, 886, 238, 175, 37, '#3d372d');
+  rect(g, 886, 269, 175, 43, '#787167');
+  rect(g, 887, 273, 85, 33, '#8c8376');
+  rect(g, 977, 273, 83, 33, '#8c8376');
   rect(g, 903, 374, 135, 35, '#4a3540');
   rect(g, 911, 366, 119, 30, COLOR.wood);
   rect(g, 955, 370, 24, 16, '#dfd4bd');
-  rect(g, 896, 62, 172, 58, '#152337');
-  rect(g, 901, 67, 162, 48, '#556372');
+  rect(g, 896, 62, 172, 58, '#28241d');
+  rect(g, 901, 67, 162, 48, '#625d56');
   rect(g, 920, 74, 3, 32, runtime === 'codex' ? COLOR.teal : COLOR.amber);
   // Exit door, so the gone corner reads as a way out.
-  rect(g, 1068, 520, 34, 72, '#1a2638');
+  rect(g, 1068, 520, 34, 72, '#2c2720');
   rect(g, 1072, 524, 26, 68, '#5b4636');
   rect(g, 1092, 556, 3, 4, COLOR.amber);
   for (const [x, y] of [[55, 165], [799, 171], [873, 181], [1066, 180], [35, 574]]) plant(g, x, y);
-  rect(g, 35, 610, 773, 7, '#243247');
+  rect(g, 35, 610, 773, 7, '#38332a');
   stage.addChild(g);
   label(pixi, stage, 'AGENT', 64, 52, 21, COLOR.cream, 'bold');
   label(pixi, stage, 'OFFICE', 64, 77, 17, runtime === 'codex' ? COLOR.teal : COLOR.amber, 'bold');
@@ -159,9 +159,9 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
   const hair = HAIR[Math.floor(key / 7) % HAIR.length];
   const skin = SKIN[Math.floor(key / 11) % SKIN.length];
   const status = STATUS[agent.status] ?? STATUS.UNKNOWN;
-  rect(g, -15, 27, 38, 6, '#1b283a');
-  rect(g, -3, 11, 10, 18, '#263147');
-  rect(g, 10, 11, 10, 18, '#263147');
+  rect(g, -15, 27, 38, 6, '#2d2821');
+  rect(g, -3, 11, 10, 18, '#39342b');
+  rect(g, 10, 11, 10, 18, '#39342b');
   rect(g, -7, -8, 31, 25, shirt);
   rect(g, -12, -4, 6, 21, shirt);
   rect(g, 24, -4, 6, 21, shirt);
@@ -172,17 +172,17 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
   rect(g, -9, -27, 5, 12, hair);
   if (key % 3 === 0) rect(g, 19, -27, 5, 10, hair);
   if (key % 4 === 0) rect(g, 0, -38, 18, 6, hair);
-  rect(g, 1, -19, 3, 3, '#293343');
-  rect(g, 13, -19, 3, 3, '#293343');
+  rect(g, 1, -19, 3, 3, '#37332c');
+  rect(g, 13, -19, 3, 3, '#37332c');
   if (agent.type === 'MAIN') {
     rect(g, -10, -37, 36, 6, runtimeAccent(agent));
     rect(g, 2, -41, 12, 5, COLOR.cream);
   }
   if (agent.status === 'WORKING') {
     // Lit monitor behind a working agent: visible proof of current activity.
-    rect(g, -9, -88, 38, 27, '#9fd8f0');
-    rect(g, -5, -84, 22, 3, '#2d5a78');
-    rect(g, -5, -78, 14, 3, '#2d5a78');
+    rect(g, -9, -88, 38, 27, '#c3baac');
+    rect(g, -5, -84, 22, 3, '#584e40');
+    rect(g, -5, -78, 14, 3, '#584e40');
     rect(g, -16, 2, 6, 5, skin);
     rect(g, 25, 5, 6, 5, skin);
   }
@@ -196,20 +196,20 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
     const mark = new pixi.Graphics();
     rect(mark, 18, -57, 25, 24, status.color);
     container.addChild(mark);
-    label(pixi, container, agent.status === 'UNKNOWN' ? '?' : '!', 25, -57, 18, '#182236', 'bold');
+    label(pixi, container, agent.status === 'UNKNOWN' ? '?' : '!', 25, -57, 18, '#2a251e', 'bold');
   }
 
   // Speech bubble: what the agent is doing, said by the agent itself. Only for states that need eyes.
   const say = agent.status === 'WAITING' ? `! ${agent.doing ?? 'Cần bạn duyệt'}` : agent.status === 'WORKING' ? agent.doing ?? 'Đang suy nghĩ…' : null;
   if (say) {
-    const text = new pixi.Text({ text: say.length > 22 ? `${say.slice(0, 21)}…` : say, style: { fontFamily: 'Courier New, monospace', fontSize: 11, fontWeight: 'bold', fill: '#182236' } });
+    const text = new pixi.Text({ text: say.length > 22 ? `${say.slice(0, 21)}…` : say, style: { fontFamily: 'Courier New, monospace', fontSize: 11, fontWeight: 'bold', fill: '#2a251e' } });
     const w = Math.ceil(text.width) + 14;
     const top = agent.status === 'WORKING' ? -122 : -78;
     const bubble = new pixi.Graphics();
     const fill = agent.status === 'WAITING' ? COLOR.amber : COLOR.cream;
     rect(bubble, 8 - w / 2, top, w, 22, fill);
     rect(bubble, 4, top + 22, 8, 5, fill);
-    rect(bubble, 8 - w / 2, top + 22, w, 2, '#0e1625');
+    rect(bubble, 8 - w / 2, top + 22, w, 2, '#1b1814');
     container.addChild(bubble);
     text.x = 15 - w / 2; text.y = top + 4;
     container.addChild(text);
@@ -219,11 +219,11 @@ function drawAvatar(pixi: Pixi, agent: CanvasAgent, selected: boolean, onSelect:
   const name = (agent.displayName ?? (agent.type === 'MAIN' ? 'Agent chính' : 'Trợ lý')).slice(0, 16);
   const width = 104;
   const plate = new pixi.Graphics();
-  rect(plate, -44, 37, width, 22, '#152235');
+  rect(plate, -44, 37, width, 22, '#27231d');
   rect(plate, -44, 37, 4, 22, status.color);
   if (agent.contextTokens != null && agent.contextLimit) {
     const ratio = Math.min(1, agent.contextTokens / agent.contextLimit);
-    rect(plate, -40, 59, width - 4, 4, '#0e1625');
+    rect(plate, -40, 59, width - 4, 4, '#1b1814');
     rect(plate, -40, 59, Math.max(2, Math.round((width - 4) * ratio)), 4, ratio >= 0.85 ? '#e0705a' : ratio >= 0.6 ? '#e6c35c' : COLOR.teal);
   }
   if (selected) plate.rect(-47, 34, width + 6, 32).stroke({ color: COLOR.cream, width: 2 });
@@ -328,7 +328,7 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
         for (const [zone, x, y] of overflow) if (hidden[zone]) {
           const tag = new pixi.Container();
           const bg = new pixi.Graphics();
-          rect(bg, 0, 0, 70, 22, '#152235');
+          rect(bg, 0, 0, 70, 22, '#27231d');
           tag.addChild(bg);
           label(pixi, tag, `+${hidden[zone]} agent`, 6, 4, 11, COLOR.cream, 'bold');
           tag.x = x; tag.y = y;
