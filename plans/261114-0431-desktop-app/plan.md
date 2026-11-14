@@ -21,6 +21,7 @@ Today: Docker (Postgres + NestJS API + Next.js dev/prod server) ≈ 3 containers
 - **Release**: GitHub Actions on tag `v*` builds macOS (arm64 + x64, .dmg) and Windows (.msi), signs update bundles, publishes Release.
 
 ## Phases
+0. Bước tạm (1 ngày): tắt Docker; dừng vẽ Pixi khi tab bị ẩn và hạ khung hình xuống 30fps khi không có agent hoạt động. Máy mát hơn ngay trong lúc chờ có app.
 1. Static export of web UI; replace API/socket client with a Tauri bridge (`invoke` + events).
 2. Rust core: SQLite schema + migrations, ingest endpoint, snapshot query, limits endpoint. Port unit tests.
 3. Tray app shell, hidden-window throttling, first-run hook installer (asks consent).
@@ -38,6 +39,8 @@ Today: Docker (Postgres + NestJS API + Next.js dev/prod server) ≈ 3 containers
 - Rust toolchain needed for local builds (CI builds releases).
 - Existing Postgres history is not migrated (fresh SQLite) unless asked.
 
-## Unresolved
-- Repo public or private? Auto-update from a private repo needs a token or a separate public releases repo.
-- Need Windows/Linux builds now, or macOS only first?
+## Defaults (chọn sẵn, đổi được)
+- Repo releases public (repo riêng `agent-office-releases` nếu code muốn để private): tự cập nhật không cần token.
+- macOS arm64 trước, sau đó x64 và Windows.
+- Chưa mua Apple ID: hướng dẫn chuột phải → Open lần đầu; mua khi có người dùng ngoài.
+- Không chuyển lịch sử Postgres sang.
