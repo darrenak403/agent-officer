@@ -1,0 +1,31 @@
+[package]
+name = "office-core"
+version = "0.1.0"
+edition = "2021"
+description = "Agent Office backend: hook ingest + SQLite store + snapshot, no Docker"
+
+[lib]
+name = "office_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "office-core"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "signal"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures-util = "0.3"
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+tower-http = { version = "0.6", features = ["cors"] }
+subtle = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
