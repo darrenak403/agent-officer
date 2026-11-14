@@ -51,11 +51,35 @@ fn first_run_hooks() {
     set_hooks(ask(msg, "Cài hook", "Để sau"));
 }
 
+/// Checks GitHub Releases for a newer signed build; asks before installing, then restarts.
+/// `quiet` skips the "already up to date" notice for the background checks.
+async fn check_update(app: tauri::AppHandle, quiet: bool) {
+    use tauri_plugin_updater::UpdaterExt;
+    let update = match app.updater().map_err(|e| e.to_string()) {
+        Ok(u) => u.check().await.map_err(|e| e.to_string()),
+        Err(e) => Err(e),
+    };
+    match update {
+        Ok(Some(u)) => {
+            let msg = format!("Có bản mới Agent Office v{} (đang dùng v{}). Cập nhật và khởi động lại?", u.version, u.current_version);
+            if !tauri::async_runtime::spawn_blocking(move || ask(&msg, "Cập nhật", "Để sau")).await.unwrap_or(false) { return; }
+            tell("Đang tải bản cập nhật...");
+            match u.download_and_install(|_, _| {}, || {}).await {
+                Ok(()) => app.restart(),
+                Err(e) => tell(&format!("Cập nhật lỗi: {e}")),
+            }
+        }
+        Ok(None) => if !quiet { tell(&format!("Đang dùng bản mới nhất v{}", app.package_info().version)) },
+        Err(e) => if !quiet { tell(&format!("Không kiểm tra được bản mới: {e}")) },
+    }
+}
+
 fn main() {
     // Runtimes call the same binary for hooks and the status line; those exit without a window.
     let args: Vec<String> = std::env::args().collect();
     if office_core::run_cli(&args) { return; }
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // Menu-bar app: no Dock icon on macOS.
             #[cfg(target_os = "macos")]
@@ -69,12 +93,21 @@ fn main() {
             });
 
             std::thread::spawn(first_run_hooks);
+            // Check on start, then every 6 hours.
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    check_update(handle.clone(), true).await;
+                    tokio::time::sleep(std::time::Duration::from_secs(6 * 3600)).await;
+                }
+            });
 
             let open = MenuItem::with_id(app, "open", "Mở Agent Office", true, None::<&str>)?;
             let install = MenuItem::with_id(app, "hooks-on", "Cài hook Claude/Codex", true, None::<&str>)?;
             let uninstall = MenuItem::with_id(app, "hooks-off", "Gỡ hook", true, None::<&str>)?;
+            let update = MenuItem::with_id(app, "update", "Kiểm tra bản mới", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Thoát", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &install, &uninstall, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &install, &uninstall, &update, &quit])?;
             TrayIconBuilder::with_id("tray")
                 .icon(app.default_window_icon().cloned().expect("bundle icon"))
                 .tooltip("Agent Office")
@@ -84,6 +117,7 @@ fn main() {
                     "open" => show_main(app),
                     "hooks-on" => { std::thread::spawn(|| set_hooks(true)); }
                     "hooks-off" => { std::thread::spawn(|| set_hooks(false)); }
+                    "update" => { tauri::async_runtime::spawn(check_update(app.clone(), false)); }
                     "quit" => app.exit(0),
                     _ => {}
                 })

@@ -13,6 +13,7 @@
     "hooks:install": "node scripts/setup-hooks.mjs install both",
     "hooks:uninstall": "node scripts/setup-hooks.mjs uninstall both",
     "replay:install": "node scripts/replay-service.mjs install",
-    "replay:uninstall": "node scripts/replay-service.mjs uninstall"
+    "replay:uninstall": "node scripts/replay-service.mjs uninstall",
+    "desktop:ui": "pnpm --filter @office/contracts build && STATIC_EXPORT=1 pnpm --filter @office/web build"
   }
 }
