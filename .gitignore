@@ -8,3 +8,4 @@ dist/
 !.env.example
 apps/web/out/
 apps/core/target/
+*.db
