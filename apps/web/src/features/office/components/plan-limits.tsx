@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { OfficeSnapshot } from '@office/contracts';
+import type { OfficeAccounts, OfficeSnapshot } from '@office/contracts';
 
 const TZ = 'Asia/Ho_Chi_Minh';
 const clock = new Intl.DateTimeFormat('vi-VN', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -29,18 +29,35 @@ function Limit({ name, pct, resetsAt, now, withDay }: { name: string; pct: numbe
   );
 }
 
-/** Plan usage windows as last reported by the status line, plus a live Vietnam clock. */
-export function PlanLimits({ limits }: { limits: OfficeSnapshot['limits'] }) {
+const compact = new Intl.NumberFormat('vi-VN', { notation: 'compact', maximumFractionDigits: 1 });
+
+/**
+ * Account, plan usage and a live Vietnam clock. Real percentages come from the Claude status line
+ * or Codex's own session log; without them Claude shows a local token estimate for the 5-hour window.
+ */
+export function PlanLimits({ limits, info }: { limits: OfficeSnapshot['limits']; info: OfficeAccounts | undefined }) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => { setNow(Date.now()); const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
   if (now == null) return null;
+  const real = limits ?? info?.limits ?? null;
+  const acct = info?.account;
+  const est = info?.estimate;
+  const estReset = est?.resetsAt ? Date.parse(est.resetsAt) : null;
   return (
     <div className="plan-limits">
-      {!limits && <span className="limit-empty" title="Số liệu đến từ status line của Claude Code CLI; app desktop không chạy status line">Hạn mức gói: mở <code>claude</code> trong terminal để lấy số liệu</span>}
-      {limits && <>
-        <Limit name="5 giờ" pct={limits.fiveHourPct} resetsAt={limits.fiveHourResetsAt} now={now} />
-        <Limit name="Tuần" pct={limits.weekPct} resetsAt={limits.weekResetsAt} now={now} withDay />
+      {acct && <span className="account" title={[acct.name, acct.email, acct.organization].filter(Boolean).join(' · ')}>
+        <span className="account-email">{acct.email ?? acct.name ?? 'Đã đăng nhập'}</span>{acct.plan && <b className="account-plan">{acct.plan}</b>}
+      </span>}
+      {info && !acct && <span className="limit-empty">Chưa đăng nhập</span>}
+      {real && <>
+        <Limit name="5 giờ" pct={real.fiveHourPct} resetsAt={real.fiveHourResetsAt} now={now} />
+        <Limit name="Tuần" pct={real.weekPct} resetsAt={real.weekResetsAt} now={now} withDay />
       </>}
+      {!real && est && <div className="limit limit-estimate" title={`Ước tính từ transcript trên máy (${est.replies} lượt trả lời, không tính ${compact.format(est.cacheRead)} token đọc cache). % hạn mức thật chỉ có khi chạy claude trong terminal.`}>
+        <span className="limit-name">5 giờ</span>
+        <b>{compact.format(est.tokens)} token</b>
+        <span className="limit-reset">{estReset ? `${left(estReset - now)} · hồi ${at.format(estReset)}` : 'chưa dùng trong cửa sổ này'}</span>
+      </div>}
       <time className="vn-clock" dateTime={new Date(now).toISOString()}>{clock.format(now)}<small>{day.format(now)} · GMT+7</small></time>
     </div>
   );

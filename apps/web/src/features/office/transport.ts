@@ -1,6 +1,6 @@
 'use client';
 
-import { OfficeEventsResponseSchema, OfficeSnapshotSchema, type OfficeEventsResponse, type OfficeSnapshot, type Runtime } from '@office/contracts';
+import { OfficeAccountsSchema, type OfficeAccounts, OfficeEventsResponseSchema, OfficeSnapshotSchema, type OfficeEventsResponse, type OfficeSnapshot, type Runtime } from '@office/contracts';
 
 /**
  * Everything the office UI needs from its backend. It talks HTTP and SSE to the office
@@ -9,6 +9,7 @@ import { OfficeEventsResponseSchema, OfficeSnapshotSchema, type OfficeEventsResp
 export type OfficeTransport = {
   snapshot(runtime: Runtime, signal?: AbortSignal): Promise<OfficeSnapshot>;
   history(runtime: Runtime, sessionId: string, signal?: AbortSignal): Promise<OfficeEventsResponse["events"]>;
+  accounts(runtime: Runtime, signal?: AbortSignal): Promise<OfficeAccounts>;
   /** Calls onChange whenever new data may exist; returns an unsubscribe function. */
   subscribe(runtime: Runtime, onChange: () => void, onConnection: (connected: boolean) => void): () => void;
 };
@@ -31,6 +32,9 @@ export const httpTransport: OfficeTransport = {
     const parsed = OfficeEventsResponseSchema.parse(await getJson(`${api}/api/office/events?runtime=${runtime}&sessionId=${encodeURIComponent(sessionId)}`, signal));
     if (parsed.runtime !== runtime) throw new Error('Office history runtime mismatch');
     return parsed.events;
+  },
+  async accounts(runtime, signal) {
+    return OfficeAccountsSchema.parse(await getJson(`${api}/api/office/accounts?runtime=${runtime}`, signal));
   },
   // Server-sent events; EventSource reconnects by itself, e.g. while the app restarts.
   subscribe(runtime, onChange, onConnection) {

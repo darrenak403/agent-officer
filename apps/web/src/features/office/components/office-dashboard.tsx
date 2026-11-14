@@ -9,7 +9,7 @@ import { ActivityFeed } from './activity-feed';
 import { ContextBar } from './context-bar';
 import { PlanLimits } from './plan-limits';
 import { SessionPicker } from './session-picker';
-import { useOfficeHistory, useOfficeLive } from '../hooks';
+import { useOfficeHistory, useOfficeLive, useOfficeAccounts } from '../hooks';
 import { projectPresence, type Presence } from '../presence';
 import { agentNames, describeTool, sessionLabel } from '../labels';
 
@@ -52,6 +52,7 @@ function Office() {
   const [view, setView] = useState<'office' | 'list'>('office');
   const { snapshot, available, socketConnected } = useOfficeLive(runtime);
   const now = useNow();
+  const accounts = useOfficeAccounts(runtime);
 
   const sessions = snapshot.sessions;
   const activeSession = sessions.find(s => s.id === sessionId) ?? sessions[0];
@@ -107,7 +108,7 @@ function Office() {
         <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>
       </div>
       <SessionPicker sessions={sessions} activeId={activeSession?.id ?? null} onChange={id => { setSessionId(id); setSelectedId(null); }} />
-      <PlanLimits limits={snapshot.limits ?? null} />
+      <PlanLimits limits={snapshot.limits ?? null} info={accounts.data} />
       <span className={`health ${health.cls}`}>{health.text}</span>
     </header>
 

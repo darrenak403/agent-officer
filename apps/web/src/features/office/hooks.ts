@@ -31,3 +31,8 @@ export function useOfficeHistory(runtime: Runtime, sessionId: string | null) {
     staleTime: 5000,
   });
 }
+
+/** Account and plan usage; local file reads, so once a minute is plenty. */
+export function useOfficeAccounts(runtime: Runtime) {
+  return useQuery({ queryKey: ['office', 'accounts', runtime], queryFn: ({ signal }) => transport.accounts(runtime, signal), refetchInterval: 60000, staleTime: 30000, retry: 1 });
+}

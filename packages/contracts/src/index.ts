@@ -85,3 +85,12 @@ export type OfficeSnapshot = z.infer<typeof OfficeSnapshotSchema>;
 
 export const OfficeEventsResponseSchema = z.object({ runtime: Runtime, events: z.array(OfficeEventSchema) });
 export type OfficeEventsResponse = z.infer<typeof OfficeEventsResponseSchema>;
+
+/** Signed-in account and plan usage read from local files by the desktop app (never tokens). */
+const limitsShape = z.object({ fiveHourPct: z.number().nullable(), fiveHourResetsAt: z.string().nullable(), weekPct: z.number().nullable(), weekResetsAt: z.string().nullable(), updatedAt: z.string() });
+export const OfficeAccountsSchema = z.object({
+  account: z.object({ email: z.string().nullable(), name: z.string().nullable(), organization: z.string().nullable(), plan: z.string().nullable() }).nullable(),
+  limits: limitsShape.nullable(),
+  estimate: z.object({ tokens: z.number(), cacheRead: z.number(), replies: z.number(), startedAt: z.string().nullable(), resetsAt: z.string().nullable() }).nullable(),
+});
+export type OfficeAccounts = z.infer<typeof OfficeAccountsSchema>;

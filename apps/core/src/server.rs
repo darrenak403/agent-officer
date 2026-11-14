@@ -64,6 +64,14 @@ async fn get_snapshot(State(s): State<AppState>, Query(q): Query<RuntimeQuery>) 
     Ok(Json(snapshot::snapshot(&conn, &runtime).map_err(internal)?).into_response())
 }
 
+/// Signed-in account, plan usage and the local 5-hour estimate; file reads run off the async pool.
+async fn get_accounts(Query(q): Query<RuntimeQuery>) -> ApiResult {
+    let runtime = runtime_of(&q)?;
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from).ok_or_else(|| internal("HOME is not set"))?;
+    let v = tokio::task::spawn_blocking(move || crate::accounts::summary(&home, &runtime)).await.map_err(internal)?;
+    Ok(Json(v).into_response())
+}
+
 async fn get_events(State(s): State<AppState>, Query(q): Query<RuntimeQuery>) -> ApiResult {
     let runtime = runtime_of(&q)?;
     let after = match q.after.as_deref() { Some(a) => Some(a.parse::<i64>().map_err(|_| bad("invalid cursor"))?), None => None };
@@ -108,6 +116,7 @@ pub async fn serve(data_dir: PathBuf, port: u16, shutdown: impl std::future::Fut
         .route("/api/health", get(|| async { Json(json!({ "ok": true, "service": "visual-agent-office" })) }))
         .route("/api/office/snapshot", get(get_snapshot))
         .route("/api/office/events", get(get_events))
+        .route("/api/office/accounts", get(get_accounts))
         .route("/api/office/stream", get(stream))
         .route("/api/ingest", post(ingest_event))
         .route("/api/ingest/limits", post(ingest_limits))

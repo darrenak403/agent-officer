@@ -1,6 +1,7 @@
 //! Agent Office core: validates hook events, stores them in SQLite and builds the office snapshot.
 //! The same library backs the standalone `office-core` server and, later, the Tauri desktop app.
 
+pub mod accounts;
 pub mod collector;
 pub mod db;
 pub mod event;
