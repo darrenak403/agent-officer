@@ -102,7 +102,7 @@ function Office() {
 
   return <div className="app" data-runtime={runtime}>
     <header className="topbar">
-      <div className="brand"><span className="brand-mark" aria-hidden="true" /><strong>Agent Office</strong></div>
+      <div className="brand"><img className="brand-mark" src="/logo-mark.png" alt="" width={28} height={28} /><strong>Agent Office</strong></div>
       <div className="switch" role="group" aria-label="Chọn môi trường code">
         <button aria-pressed={runtime === 'claude_code'} onClick={() => chooseRuntime('claude_code')}>Claude Code</button>
         <button aria-pressed={runtime === 'codex'} onClick={() => chooseRuntime('codex')}>Codex</button>

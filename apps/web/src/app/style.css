@@ -207,3 +207,5 @@ h2{margin:0;font-size:13px;font-weight:700}
 @media (max-width:1600px){.health{font-size:0;gap:0;padding:8px}.health::before{margin:0}}
 @media (max-width:1400px){.vn-clock{display:none}.account-email{max-width:130px}}
 @media (max-width:1200px){.topbar{flex-wrap:wrap}.plan-limits{order:5;flex-basis:100%;margin-left:0}.usage{flex:1}.vn-clock{display:flex;margin-left:auto}.vn-clock small{display:block}}
+
+.brand-mark{width:28px;height:28px;background:none;box-shadow:none;object-fit:contain}
