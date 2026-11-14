@@ -257,14 +257,17 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
       await import('pixi.js/unsafe-eval');
       if (disposed || !holder.current) return;
       app = new pixi.Application();
-      await app.init({ width: SIZE.width, height: SIZE.height, background: COLOR.wallEdge, antialias: false, resolution: Math.min(window.devicePixelRatio, 2) });
+      await app.init({ autoStart: false, width: SIZE.width, height: SIZE.height, background: COLOR.wallEdge, antialias: false, resolution: Math.min(window.devicePixelRatio, 2) });
       if (disposed || !holder.current) { app.destroy(true); app = undefined; return; }
       app.canvas.style.width = '100%';
       app.canvas.style.height = 'auto';
       app.canvas.style.display = 'block';
       app.canvas.style.imageRendering = 'pixelated';
       holder.current.appendChild(app.canvas);
-      app.stage.addChild(background(pixi, runtime));
+      // The office itself never changes: draw it once into a texture instead of every frame.
+      const room = background(pixi, runtime);
+      room.cacheAsTexture(true);
+      app.stage.addChild(room);
       const layer = new pixi.Container();
       app.stage.addChild(layer);
       // gx/gy is where the agent stands on the floor now; x/y is where its zone wants it.
@@ -273,31 +276,38 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
       // Where each agent last stood, so a state change walks it to its new zone instead of teleporting.
       const placed = new Map<string, { x: number; y: number }>();
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-      // Keep the GPU quiet: 30fps while something moves, 4fps when the office is still, none while hidden.
-      const ticker = app.ticker;
+      // Keep the GPU quiet: the app's own render loop stays off and a frame is drawn only when
+      // something on screen changed. Ticks run at 30fps while walking or pulsing, 4fps for the
+      // typing bob, 1fps when still, and not at all while the window is hidden.
+      let dirty = true;
+      const ticker = new pixi.Ticker();
       ticker.maxFPS = 30;
       const onVisibility = () => { if (document.hidden) ticker.stop(); else ticker.start(); };
       document.addEventListener('visibilitychange', onVisibility);
       onVisibility();
       ticker.add(ticker => {
         const now = performance.now();
-        let busy = false;
+        let busy = false, fast = false;
         const frame = Math.floor(now / 240);
         const step = Math.min(1, 0.08 * ticker.deltaTime);
         for (const e of animated) {
           const walking = !reduced.matches && Math.hypot(e.x - e.gx, e.y - e.gy) > 1;
-          if (walking || e.status === 'WORKING' || e.status === 'WAITING') busy = true;
+          if (walking || e.status === 'WAITING') fast = true;
+          if (e.status === 'WORKING') busy = true;
           if (walking) { e.gx += (e.x - e.gx) * step; e.gy += (e.y - e.gy) * step; } else { e.gx = e.x; e.gy = e.y; }
           // Footsteps while walking, a typing bob at the desk, a soft pulse while waiting for approval.
           const bob = reduced.matches ? 0 : walking ? (frame % 2 ? -3 : 0) : e.status === 'WORKING' && frame % 2 ? 2 : 0;
-          e.item.x = e.gx; e.item.y = e.gy + bob;
-          e.item.alpha = !reduced.matches && e.status === 'WAITING' ? 0.65 + 0.35 * Math.abs(Math.sin(now / 420)) : 1;
+          const alpha = !reduced.matches && e.status === 'WAITING' ? 0.65 + 0.35 * Math.abs(Math.sin(now / 420)) : 1;
+          if (e.item.x !== e.gx || e.item.y !== e.gy + bob || e.item.alpha !== alpha) dirty = true;
+          e.item.x = e.gx; e.item.y = e.gy + bob; e.item.alpha = alpha;
         }
-        ticker.maxFPS = busy && !reduced.matches ? 30 : 4;
+        ticker.maxFPS = reduced.matches ? 1 : fast ? 30 : busy ? 4 : 1;
+        if (dirty) { dirty = false; app?.render(); }
       });
       const paint = (items: CanvasAgent[], selected: string | null) => {
         for (const child of layer.removeChildren()) child.destroy({ children: true });
         animated.length = 0;
+        dirty = true;
         // Zone = observed state: desks for active turns, lounge for resting, exit for gone/unknown.
         // Active agents first so they always get a desk; overflow per zone is summarized, never misplaced.
         const now = Date.now();
@@ -334,7 +344,7 @@ export function OfficeCanvas({ agents, selectedId, runtime, onSelect }: {
           layer.addChild(tag);
         }
       };
-      scene.current = { paint, destroy: () => { document.removeEventListener('visibilitychange', onVisibility); app?.destroy(true); } };
+      scene.current = { paint, destroy: () => { document.removeEventListener('visibilitychange', onVisibility); ticker.destroy(); app?.destroy(true); } };
       paint(latest.current.agents, latest.current.selectedId);
     }
     void mount().catch(error => console.error('office canvas failed', error));
