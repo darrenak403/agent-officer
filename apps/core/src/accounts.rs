@@ -140,7 +140,10 @@ struct Usage { at: i64, tokens: u64, cache_read: u64 }
 
 /// Per transcript: bytes already parsed and the replies found, so each refresh reads only new lines.
 #[derive(Default)]
-struct FileScan { offset: u64, items: Vec<(String, Usage)> }
+struct FileScan { offset: u64, items: Vec<(String, Usage)>, hits: Vec<i64> }
+
+/// How far back to look for 5-hour limit hits that calibrate the percentage.
+const CALIBRATE: i64 = 7 * 24 * 3600;
 
 static SCANS: Mutex<Option<HashMap<PathBuf, FileScan>>> = Mutex::new(None);
 
@@ -154,6 +157,25 @@ fn parse_usage(line: &str) -> Option<(String, Usage)> {
     // Streaming writes the same reply more than once; message id + request id identify it.
     let key = format!("{}:{}", v["message"]["id"].as_str().unwrap_or(""), v["requestId"].as_str().unwrap_or(""));
     Some((key, Usage { at, tokens: n("input_tokens") + n("output_tokens") + n("cache_creation_input_tokens"), cache_read: n("cache_read_input_tokens") }))
+}
+
+/// Reset time (unix seconds) of a "5-hour limit reached" error Claude Code wrote into the transcript.
+fn parse_limit_hit(line: &str) -> Option<i64> {
+    if !line.contains("usage_limit_reached") || !line.contains("five_hour") { return None; }
+    let v: Value = serde_json::from_str(line).ok()?;
+    fn find(v: &Value) -> Option<i64> {
+        match v {
+            Value::Object(m) => {
+                if m.get("rateLimitType").and_then(Value::as_str) == Some("five_hour") {
+                    if let Some(r) = m.get("resetsAt").and_then(Value::as_i64) { return Some(r); }
+                }
+                m.values().find_map(find)
+            }
+            Value::Array(a) => a.iter().find_map(find),
+            _ => None,
+        }
+    }
+    find(&v)
 }
 
 fn scan(path: &Path, state: &mut FileScan) {
@@ -171,6 +193,8 @@ fn scan(path: &Path, state: &mut FileScan) {
                 if !line.ends_with('\n') { break; } // still being written; read it next time
                 state.offset += n as u64;
                 if let Some(item) = parse_usage(&line) { state.items.push(item); }
+                // Limit errors can carry an (empty) usage block too, so check both.
+                if let Some(reset) = parse_limit_hit(&line) { state.hits.push(reset); }
             }
         }
     }
@@ -194,35 +218,51 @@ fn transcripts(home: &Path, since: SystemTime) -> Vec<PathBuf> {
 /// reply after the previous block ended and lasts 5 hours. Counts tokens; the plan's real
 /// percentage is only known from the status line.
 fn claude_estimate(home: &Path, now: DateTime<Utc>) -> Value {
-    let since = SystemTime::now() - Duration::from_secs((2 * BLOCK) as u64);
+    let since = SystemTime::now() - Duration::from_secs(CALIBRATE as u64);
     let mut guard = SCANS.lock().unwrap();
     let scans = guard.get_or_insert_with(HashMap::new);
     let files = transcripts(home, since);
     scans.retain(|p, _| files.contains(p));
     let mut seen = HashSet::new();
     let mut items: Vec<Usage> = Vec::new();
-    let cutoff = now.timestamp() - 2 * BLOCK;
+    let mut hits: Vec<i64> = Vec::new();
+    let now_s = now.timestamp();
+    let cutoff = now_s - CALIBRATE;
     for p in files {
         let s = scans.entry(p.clone()).or_default();
         scan(&p, s);
         s.items.retain(|(_, u)| u.at >= cutoff);
+        s.hits.retain(|r| *r >= cutoff);
         for (k, u) in &s.items { if seen.insert(k.clone()) { items.push(u.clone()); } }
+        hits.extend(&s.hits);
     }
     items.sort_by_key(|u| u.at);
-    let mut start: Option<i64> = None;
-    let (mut tokens, mut cache_read, mut replies) = (0u64, 0u64, 0u64);
-    for u in &items {
-        if start.is_none_or(|s| u.at >= s + BLOCK) {
-            start = Some(u.at - u.at.rem_euclid(3600));
-            (tokens, cache_read, replies) = (0, 0, 0);
-        }
-        tokens += u.tokens; cache_read += u.cache_read; replies += 1;
-    }
-    let Some(start) = start.filter(|s| now.timestamp() < s + BLOCK) else {
-        return json!({ "tokens": 0, "cacheRead": 0, "replies": 0, "startedAt": null, "resetsAt": null });
-    };
+    hits.sort_unstable();
+    hits.dedup();
+    let sum = |from: i64, to: i64| items.iter().filter(|u| u.at >= from && u.at < to).map(|u| u.tokens).sum::<u64>();
+    // Tokens used in a window that ended in a limit hit are what 100% looked like.
+    let cap = hits.iter().filter(|r| **r <= now_s).map(|r| sum(r - BLOCK, *r)).max().filter(|c| *c > 0);
     let at = |s: i64| DateTime::<Utc>::from_timestamp(s, 0).map(iso);
-    json!({ "tokens": tokens, "cacheRead": cache_read, "replies": replies, "startedAt": at(start), "resetsAt": at(start + BLOCK) })
+    // A hit whose reset is still ahead gives the real window.
+    let blocked = hits.iter().copied().find(|r| *r > now_s);
+    let start = match blocked {
+        Some(r) => Some(r - BLOCK),
+        None => {
+            let mut start: Option<i64> = None;
+            for u in items.iter().filter(|u| u.at >= now_s - 2 * BLOCK) {
+                if start.is_none_or(|s| u.at >= s + BLOCK) { start = Some(u.at - u.at.rem_euclid(3600)); }
+            }
+            start.filter(|s| now_s < s + BLOCK)
+        }
+    };
+    let Some(start) = start else {
+        return json!({ "tokens": 0, "cacheRead": 0, "replies": 0, "startedAt": null, "resetsAt": null, "pct": cap.map(|_| 0.0), "calibrations": hits.len() });
+    };
+    let block: Vec<&Usage> = items.iter().filter(|u| u.at >= start && u.at < start + BLOCK).collect();
+    let tokens: u64 = block.iter().map(|u| u.tokens).sum();
+    let pct = if blocked.is_some() { Some(100.0) } else { cap.map(|c| (tokens as f64 / c as f64 * 100.0).min(99.0)) };
+    json!({ "tokens": tokens, "cacheRead": block.iter().map(|u| u.cache_read).sum::<u64>(), "replies": block.len(),
+            "startedAt": at(start), "resetsAt": at(start + BLOCK), "pct": pct, "calibrations": hits.len() })
 }
 
 #[cfg(test)]
@@ -271,5 +311,24 @@ mod tests {
         assert_eq!(e["tokens"], 150);
         assert_eq!(e["cacheRead"], 2000);
         assert!(e["resetsAt"].is_string());
+    }
+
+    #[test]
+    fn calibrates_percent_from_a_past_limit_hit() {
+        let h = home("cal");
+        let dir = h.join(".claude/projects/p");
+        std::fs::create_dir_all(&dir).unwrap();
+        let now = Utc::now();
+        let ts = |mins: i64| (now - chrono::Duration::minutes(mins)).to_rfc3339();
+        let reply = |id: &str, mins: i64, out: u64| format!(
+            r#"{{"type":"assistant","requestId":"r{id}","timestamp":"{}","message":{{"id":"m{id}","usage":{{"input_tokens":0,"output_tokens":{out}}}}}}}"#, ts(mins));
+        // A window 24h ago used 1000 tokens and hit the limit; the current one has used 250.
+        let reset = (now - chrono::Duration::hours(24)).timestamp();
+        let hit = format!(r#"{{"type":"assistant","error":"usage_limit_reached","apiErrorParams":{{"rate_limit_info":{{"rateLimitType":"five_hour","resetsAt":{reset}}}}}}}"#);
+        let lines = [reply("a", 24 * 60 + 120, 1000), hit, reply("b", 30, 250)].join("\n") + "\n";
+        std::fs::write(dir.join("t.jsonl"), lines).unwrap();
+        let e = claude_estimate(&h, now);
+        assert_eq!(e["tokens"], 250);
+        assert!((e["pct"].as_f64().unwrap() - 25.0).abs() < 0.01, "{e}");
     }
 }

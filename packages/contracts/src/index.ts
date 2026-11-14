@@ -91,6 +91,6 @@ const limitsShape = z.object({ fiveHourPct: z.number().nullable(), fiveHourReset
 export const OfficeAccountsSchema = z.object({
   account: z.object({ email: z.string().nullable(), name: z.string().nullable(), organization: z.string().nullable(), plan: z.string().nullable() }).nullable(),
   limits: limitsShape.nullable(),
-  estimate: z.object({ tokens: z.number(), cacheRead: z.number(), replies: z.number(), startedAt: z.string().nullable(), resetsAt: z.string().nullable() }).nullable(),
+  estimate: z.object({ tokens: z.number(), cacheRead: z.number(), replies: z.number(), startedAt: z.string().nullable(), resetsAt: z.string().nullable(), pct: z.number().nullable().optional(), calibrations: z.number().optional() }).nullable(),
 });
 export type OfficeAccounts = z.infer<typeof OfficeAccountsSchema>;
