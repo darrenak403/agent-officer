@@ -94,8 +94,10 @@ function Office() {
     window.history.replaceState(null, '', url);
   }
 
+  // Sessions opened before the hooks were installed have no SessionStart; fall back to the first event seen.
+  const firstSeen = visibleEvents.reduce<number | null>((min, e) => { const t = Date.parse(e.receivedAt); return Number.isFinite(t) && (min == null || t < min) ? t : min; }, null);
+  const sessionStart = activeSession?.startedAt ? Date.parse(activeSession.startedAt) : firstSeen;
   const waitingAgents = liveAgents.filter(a => a.presence.status === 'WAITING');
-  const mainContext = activeSession?.agents.find(a => a.type === 'MAIN');
 
   return <div className="app" data-runtime={runtime}>
     <header className="topbar">
@@ -118,7 +120,7 @@ function Office() {
             <span data-s="IDLE"><b key={`r${resting}`}>{resting}</b>đang nghỉ</span>
             <span data-s="STOPPED"><b key={`g${gone}`}>{gone}</b>đã rời</span>
           </div>
-          {mainContext && <div className="hero-context"><ContextBar agent={mainContext} compact /></div>}
+          {sessionStart != null && <span className="session-time" title="Từ lúc phiên bắt đầu (hoặc sự kiện đầu tiên office nhận được)">Phiên chạy <b>{duration((activeSession?.endedAt ? Date.parse(activeSession.endedAt) : now) - sessionStart)}</b></span>}
           <div className="view-switch"><button aria-pressed={view === 'office'} onClick={() => setView('office')}>Bản đồ</button><button aria-pressed={view === 'list'} onClick={() => setView('list')}>Danh sách</button></div>
         </div>
         {waitingAgents.length > 0 && <div className="alert" role="status"><b>!</b>{waitingAgents.map(a => a.displayName).join(', ')} đang chờ bạn duyệt trong terminal</div>}
@@ -140,6 +142,13 @@ function Office() {
       </aside>
     </div>
   </div>;
+}
+
+/** Session length as "2g 05p" or "12 phút". */
+function duration(ms: number) {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  const h = Math.floor(m / 60);
+  return h ? `${h}g ${String(m % 60).padStart(2, '0')}p` : `${m} phút`;
 }
 
 export function OfficeDashboard() {
