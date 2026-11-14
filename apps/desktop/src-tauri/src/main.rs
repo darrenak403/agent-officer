@@ -13,6 +13,44 @@ fn show_main(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") { let _ = w.show(); let _ = w.unminimize(); let _ = w.set_focus(); }
 }
 
+/// Native yes/no question; no dialog plugin needed on macOS.
+fn ask(msg: &str, yes: &str, no: &str) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
+        let script = format!("button returned of (display dialog \"{}\" with title \"Agent Office\" buttons {{\"{}\", \"{}\"}} default button \"{}\")",
+            esc(msg), esc(no), esc(yes), esc(yes));
+        return std::process::Command::new("osascript").args(["-e", &script]).output()
+            .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).trim() == yes);
+    }
+    #[allow(unreachable_code)] { let _ = (msg, yes, no); false }
+}
+
+fn tell(msg: &str) {
+    #[cfg(target_os = "macos")]
+    { let _ = std::process::Command::new("osascript").args(["-e", &format!("display notification \"{}\" with title \"Agent Office\"", msg.replace('"', "'"))]).status(); }
+    #[cfg(not(target_os = "macos"))] eprintln!("{msg}");
+}
+
+fn set_hooks(install: bool) {
+    let (Some(home), Ok(exe)) = (std::env::var_os("HOME").map(std::path::PathBuf::from), std::env::current_exe()) else { return };
+    let dir = office_core::default_data_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    tell(&office_core::installer::apply_all(&home, &exe, &dir, install).join("; "));
+}
+
+/// First run (or the app moved): ask once before touching Claude/Codex settings.
+fn first_run_hooks() {
+    let Some(home) = std::env::var_os("HOME").map(std::path::PathBuf::from) else { return };
+    let Ok(exe) = std::env::current_exe() else { return };
+    let dir = office_core::default_data_dir();
+    let asked = office_core::installer::consent(&dir);
+    if asked == Some(false) || !office_core::installer::needs_install(&home, &exe) { return; }
+    let msg = if asked == Some(true) { "Hook trỏ tới bản Agent Office cũ. Cập nhật sang bản này?" }
+        else { "Agent Office cần thêm hook vào ~/.claude/settings.json (và ~/.codex/hooks.json nếu có) để thấy agent làm việc. Hook cũ của bạn được giữ, file được sao lưu trước. Cài ngay?" };
+    set_hooks(ask(msg, "Cài hook", "Để sau"));
+}
+
 fn main() {
     // Runtimes call the same binary for hooks and the status line; those exit without a window.
     let args: Vec<String> = std::env::args().collect();
@@ -30,9 +68,13 @@ fn main() {
                 }
             });
 
+            std::thread::spawn(first_run_hooks);
+
             let open = MenuItem::with_id(app, "open", "Mở Agent Office", true, None::<&str>)?;
+            let install = MenuItem::with_id(app, "hooks-on", "Cài hook Claude/Codex", true, None::<&str>)?;
+            let uninstall = MenuItem::with_id(app, "hooks-off", "Gỡ hook", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Thoát", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &install, &uninstall, &quit])?;
             TrayIconBuilder::with_id("tray")
                 .icon(app.default_window_icon().cloned().expect("bundle icon"))
                 .tooltip("Agent Office")
@@ -40,6 +82,8 @@ fn main() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_main(app),
+                    "hooks-on" => { std::thread::spawn(|| set_hooks(true)); }
+                    "hooks-off" => { std::thread::spawn(|| set_hooks(false)); }
                     "quit" => app.exit(0),
                     _ => {}
                 })

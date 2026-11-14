@@ -5,6 +5,7 @@ pub mod collector;
 pub mod db;
 pub mod event;
 pub mod ingest;
+pub mod installer;
 pub mod server;
 pub mod snapshot;
 pub mod status;
@@ -27,6 +28,14 @@ pub fn run_cli(args: &[String]) -> bool {
         Some("hook") => {
             let runtime = args.iter().position(|a| a == "--runtime").and_then(|i| args.get(i + 1)).cloned().unwrap_or_default();
             collector::run_hook(&runtime, &default_data_dir());
+            true
+        }
+        Some(m @ ("install-hooks" | "uninstall-hooks")) => {
+            let home = std::env::var_os("HOME").map(std::path::PathBuf::from).unwrap_or_default();
+            let exe = std::env::current_exe().unwrap_or_default();
+            let dir = default_data_dir();
+            let _ = std::fs::create_dir_all(&dir);
+            for line in installer::apply_all(&home, &exe, &dir, m == "install-hooks") { println!("{line}"); }
             true
         }
         Some("statusline") => { collector::statusline::run_statusline(&default_data_dir()); true }
