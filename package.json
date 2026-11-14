@@ -4,16 +4,8 @@
   "version": "0.0.0",
   "packageManager": "pnpm@12.18.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @office/api --filter @office/web dev",
-    "build": "pnpm --filter @office/contracts build && pnpm --filter @office/domain build && pnpm --filter @office/database generate && pnpm --filter @office/api build && pnpm --filter @office/web build",
-    "test": "node --test apps/collector/test/*.test.mjs scripts/*.test.mjs && pnpm --filter @office/domain test",
-    "test:integration": "node scripts/integration-test.mjs",
-    "db:generate": "pnpm --filter @office/database generate",
-    "db:migrate": "pnpm --filter @office/database migrate",
-    "hooks:install": "node scripts/setup-hooks.mjs install both",
-    "hooks:uninstall": "node scripts/setup-hooks.mjs uninstall both",
-    "replay:install": "node scripts/replay-service.mjs install",
-    "replay:uninstall": "node scripts/replay-service.mjs uninstall",
-    "desktop:ui": "pnpm --filter @office/contracts build && STATIC_EXPORT=1 pnpm --filter @office/web build"
+    "dev": "pnpm --filter @office/web dev",
+    "desktop:ui": "pnpm --filter @office/contracts build && STATIC_EXPORT=1 pnpm --filter @office/web build",
+    "test": "cargo test --manifest-path apps/core/Cargo.toml && pnpm desktop:ui"
   }
 }

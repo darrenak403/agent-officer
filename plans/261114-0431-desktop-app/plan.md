@@ -44,3 +44,6 @@ Today: Docker (Postgres + NestJS API + Next.js dev/prod server) ≈ 3 containers
 - macOS arm64 trước, sau đó x64 và Windows.
 - Chưa mua Apple ID: hướng dẫn chuột phải → Open lần đầu; mua khi có người dùng ngoài.
 - Không chuyển lịch sử Postgres sang.
+
+## Status (2026-11-14)
+All phases done. Phase 4 deviation: update prompt is a native dialog, not an in-page banner. Not yet verified: a real tag release updating an installed build (needs the public releases repo + secrets).

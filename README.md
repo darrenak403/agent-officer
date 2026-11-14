@@ -1,50 +1,54 @@
-# Visual Multi-Agent Office
+# Agent Office
 
-A local, read-only office for observing Claude Code and Codex separately. Select a runtime in the header to see its sessions, observed agents, tasks, tools, and event timeline. The office floor shows original pixel-art desks, a lounge and status-marked characters based on observed events; the list view provides the same agent information in text. The dashboard does not start agents or make model API calls.
+A local, read-only office for watching Claude Code and Codex work. Pick a runtime in the header to see its sessions, agents, tasks, tools and event timeline, drawn as a pixel-art office floor or as a list. It never starts agents or calls a model.
 
-## Run on this Mac
+It is one small menu-bar app (about 10 MB, near 0% CPU when idle). There is no Docker, database server or Node process to run.
 
-Requirements: Docker Desktop, Node.js 20+, pnpm 12+.
+## Install
+
+1. Download the latest `.dmg` from [Releases](https://github.com/darrenak403/agent-office-releases/releases/latest) (macOS, Apple silicon) and drag **Agent Office** to Applications.
+2. The app is not signed with an Apple Developer ID yet, so macOS blocks the first launch. Run this once, then open it:
+
+   ```sh
+   xattr -cr "/Applications/Agent Office.app"
+   ```
+
+3. On first launch the app asks to add its hooks to `~/.claude/settings.json` (and `~/.codex/hooks.json` if Codex is installed). Choose **Cài hook**. Your other hooks and settings are kept, and each file is backed up next to itself as `*.office-backup-<time>` before it changes. An existing status line keeps running after the office one.
+4. **Codex only:** open `/hooks` in Codex (or **Settings → Hooks**) and trust the Agent Office hooks. Codex does not run new hooks until you do, and the app does not bypass that.
+
+New sessions appear as soon as they send a hook event. A session that was already running may miss its first `SessionStart`.
+
+The app lives in the menu bar. Closing the window only hides it; the office keeps collecting while it is hidden and pauses its drawing. The menu has: open, install hooks, remove hooks, check for updates, quit.
+
+## Update
+
+The app checks for a new version on start and every 6 hours and asks before installing. **Kiểm tra bản mới** in the menu checks now. Updates are signed; the app refuses a bundle not signed with the project's key.
+
+## Uninstall
+
+1. Menu → **Gỡ hook**. This removes only the Agent Office hooks and restores your previous status line.
+2. Quit the app and delete it from Applications.
+3. Delete its data (history and the ingest token): `~/Library/Application Support/dev.agentoffice.app`.
+
+## Privacy
+
+Everything stays on this machine. The server binds to `127.0.0.1` only and accepts events only with the local ingest token (a file readable only by you). The collector sends ids, hook and tool names, timestamps, the project path, plus a short activity summary. To show a session title, context usage and the model, it reads the tail of the session transcript on disk; it does not store prompts, tool input or output, or environment variables.
+
+Missing agent ids stay unattributed, and the office shows `UNKNOWN` after stale activity instead of inventing agents. Codex has no task hooks, so its Tasks panel may stay empty. Codex `PostToolUse` means a tool finished, not that it succeeded.
+
+## Develop
+
+Requirements: Rust (stable), Node.js 20+, pnpm 12+.
 
 ```sh
-node scripts/init-config.mjs
 pnpm install
-docker compose up -d --build
-node scripts/setup-hooks.mjs install both
-node scripts/replay-service.mjs install
+pnpm test            # Rust core tests + static UI export
+pnpm desktop:ui      # export the UI to apps/web/out
+cd apps/desktop && npx @tauri-apps/cli@2 dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The API health endpoint is [http://127.0.0.1:4100/api/health](http://127.0.0.1:4100/api/health). Existing Claude and Codex hooks are preserved. The installer checks API health and saves a backup before modifying an existing hook config.
+`pnpm dev` serves the UI on `http://127.0.0.1:3000` against a running app. The core also runs alone: `cargo run --manifest-path apps/core/Cargo.toml` (`OFFICE_DATA_DIR`, `PORT`), and `office-core install-hooks` / `uninstall-hooks` work without the UI.
 
-**Codex:** Open `/hooks` in Codex or **Settings → Hooks** and trust each Visual Agent Office hook definition. Codex will not run newly configured hooks until you review them. The office intentionally does not bypass this trust check. Claude events can arrive as soon as Claude starts another hook event; an already running session may lack its initial `SessionStart` event.
+**Release:** push a tag like `v0.2.0`. GitHub Actions builds the app, signs the update bundle and publishes it with `latest.json` to the public `agent-office-releases` repo, where installed apps find it. It needs the secrets `TAURI_SIGNING_PRIVATE_KEY` (the updater key) and `RELEASES_TOKEN` (a token that can write releases to that repo).
 
-The macOS replay service retries spooled events every 30 seconds. It is a small LaunchAgent, not a third coding runtime. It depends on this project remaining at its current path.
-
-## Verify
-
-```sh
-pnpm build
-pnpm test
-pnpm test:integration
-docker compose ps
-```
-
-The integration test creates temporary synthetic sessions in both runtimes and removes them afterward. No model call is involved. For a real observation, start a new Claude Code or Codex session after its Office hooks are active and inspect its runtime tab.
-
-## Stop or remove
-
-```sh
-docker compose down
-node scripts/replay-service.mjs uninstall
-node scripts/setup-hooks.mjs uninstall both
-```
-
-`docker compose down` retains the PostgreSQL volume. `docker compose down -v` deletes all Office history. Hook uninstall removes only the Office handlers and keeps other handlers in place.
-
-## Privacy and limits
-
-The collector sends only allowlisted identifiers, hook/tool names, timestamps, and project path to a local token-protected API. It does not read transcripts or store prompts, tool input/output, environment variables, or task titles. `.env`, the ingest token, and spool files are ignored by git. HTTP is bound to loopback.
-
-Missing agent IDs remain unattributed. The office displays `UNKNOWN` after stale activity and never invents unseen agents. Codex task hooks are not available in the current hook set, so its Tasks panel may stay empty. Tool history is limited to events the runtime exposes. Codex `PostToolUse` means a tool finished; it does not prove success.
-
-Read the [product specification](./Visual_Multi_Agent_Office_Specification.md), [dual-runtime architecture](./docs/DUAL_RUNTIME_ARCHITECTURE.md), [interface design](./docs/INTERFACE_DESIGN.md), [visual benchmark research](./plans/research/261114-0019-agent-office-benchmarks.md), and [implementation plan](./plans/2026-11-13-dual-runtime-office/plan.md).
+Layout: `apps/core` (Rust server, SQLite, hook collector, installer), `apps/desktop` (Tauri shell), `apps/web` (UI), `packages/contracts` (shared schemas). More in the [product specification](./Visual_Multi_Agent_Office_Specification.md), [dual-runtime architecture](./docs/DUAL_RUNTIME_ARCHITECTURE.md) and [interface design](./docs/INTERFACE_DESIGN.md).

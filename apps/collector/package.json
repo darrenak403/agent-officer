@@ -1,8 +1,0 @@
-{
-  "name": "@office/collector",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "engines": { "node": ">=20" },
-  "scripts": { "replay": "node src/replay.mjs" }
-}

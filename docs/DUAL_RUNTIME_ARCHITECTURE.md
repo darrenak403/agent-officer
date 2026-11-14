@@ -15,7 +15,7 @@ Codex hooks / read APIs ──> Codex adapter ┘                               
                                                                                    └──> runtime-filtered UI
 ```
 
-The implemented backend follows the specification: NestJS modular monolith, PostgreSQL, Prisma, Socket.IO, Next.js, and PixiJS. A Node standard-library collector captures allowlisted metadata and spools failed deliveries for local replay.
+The implementation is one desktop app (Tauri). Its Rust core (`apps/core`) runs the HTTP server on `127.0.0.1:4100` with SQLite in WAL mode, streams changes over server-sent events, and is also the hook collector: Claude Code and Codex call the app binary with `hook --runtime <name>`. Failed deliveries are spooled and replayed when the server starts. The UI is the Next.js page exported as static files, drawn with PixiJS. This replaced the earlier NestJS, PostgreSQL, Prisma and Socket.IO stack run in Docker.
 
 ## Identity and isolation
 
@@ -24,7 +24,7 @@ The implemented backend follows the specification: NestJS modular monolith, Post
 - Agent identity is `(runtime, session_id, runtime_agent_id)`. Fallback identity must remain session-scoped and carry confidence/source metadata.
 - A missing `agent_id` on a tool event means **unattributed** until the adapter has evidence. It is not automatically the main agent.
 - Claude Code and Codex have separate runtime-filtered data. Capability gaps are documented and never filled with inferred events; the UI currently reports API connection rather than per-runtime hook health.
-- All REST queries and WebSocket channels include runtime. A client changing runtime clears its selected session and agent, then loads that runtime's snapshot and cursor. The server enforces the filter; the UI filter alone is insufficient.
+- All REST queries and the event stream include runtime. A client changing runtime clears its selected session and agent, then loads that runtime's snapshot and cursor. The server enforces the filter; the UI filter alone is insufficient.
 - No cross-runtime `parent_agent_id`, task assignment, dedupe key, or replay cursor is valid.
 
 ## Adapter contract
